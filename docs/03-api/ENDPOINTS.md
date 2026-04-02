@@ -3,6 +3,13 @@
 This document lists planned REST API endpoints by domain. These are placeholders for design and alignment; detailed request/response schemas will be added per service.
 
 ## Identity & Access Service
+- POST /api/v1/auth/signup
+- POST /api/v1/auth/login
+- POST /api/v1/auth/logout
+- POST /api/v1/auth/refresh
+- POST /api/v1/auth/forgot-password
+- POST /api/v1/auth/reset-password
+
 - POST /api/v1/orgs
 - GET /api/v1/orgs
 - GET /api/v1/orgs/{orgId}
