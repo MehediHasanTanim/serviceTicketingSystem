@@ -25,3 +25,10 @@ Each service follows:
 
 ## Unit of Work
 All transactional operations should use a Unit of Work abstraction located in the application layer and implemented in infrastructure.
+
+## Docker (Dev)
+From repo root:
+- Build and run: `docker compose up --build`
+- App: http://localhost:8000
+
+Postgres is included via Docker in both dev and prod paths.
