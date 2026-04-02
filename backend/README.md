@@ -32,3 +32,13 @@ From repo root:
 - App: http://localhost:8000
 
 Postgres is included via Docker in both dev and prod paths.
+
+## Admin Bootstrap
+Run the admin creation script:
+- `docker compose run --rm identity_service python scripts/create_admin.py`
+
+Override defaults using env vars:
+- `ADMIN_ORG_NAME`
+- `ADMIN_EMAIL`
+- `ADMIN_DISPLAY_NAME`
+- `ADMIN_PASSWORD`
