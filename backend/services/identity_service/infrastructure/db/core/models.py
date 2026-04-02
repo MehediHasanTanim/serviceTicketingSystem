@@ -127,6 +127,14 @@ class User(TimestampedModel):
         return self.display_name
 
 
+class UserCredential(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="credential")
+    password_hash = models.CharField(max_length=255)
+    last_password_change_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class Role(TimestampedModel):
     org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="roles")
     name = models.CharField(max_length=255)
@@ -219,3 +227,23 @@ class EntityHistory(models.Model):
     before_json = models.JSONField(default=dict, blank=True)
     after_json = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class AuthToken(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="auth_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "expires_at"], name="auth_user_exp_idx"),
+        ]
+
+
+class PasswordResetToken(models.Model):
+    token = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
