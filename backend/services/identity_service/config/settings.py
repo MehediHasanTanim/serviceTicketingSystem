@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "infrastructure.db.core.apps.CoreConfig",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -68,3 +69,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Identity Service API",
+    "DESCRIPTION": "OpenAPI 3 schema for the Identity Service",
+    "VERSION": "v1",
+}
