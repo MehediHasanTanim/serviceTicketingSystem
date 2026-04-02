@@ -14,6 +14,7 @@ from infrastructure.db.core.models import (
     PasswordResetToken,
     User,
     UserCredential,
+    UserRole,
 )
 from interfaces.api.authentication import BearerTokenAuthentication
 from interfaces.api.serializers import (
@@ -38,6 +39,8 @@ def _create_auth_token(user):
 
 
 class SignupView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -46,6 +49,17 @@ class SignupView(APIView):
         org = Organization.objects.filter(id=data["org_id"]).first()
         if not org:
             return Response({"detail": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not request.user or not request.user.is_authenticated:
+            return Response({"detail": "Admin credentials required"}, status=status.HTTP_403_FORBIDDEN)
+
+        is_admin = UserRole.objects.filter(
+            user=request.user,
+            role__org=org,
+            role__name__iexact="admin",
+        ).exists()
+        if not is_admin:
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         if User.objects.filter(org=org, email__iexact=data["email"]).exists():
             return Response({"detail": "User already exists"}, status=status.HTTP_409_CONFLICT)
