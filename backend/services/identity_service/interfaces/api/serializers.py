@@ -33,3 +33,29 @@ class MeSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
     email = serializers.EmailField()
     display_name = serializers.CharField(max_length=255)
+
+
+class UserCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    email = serializers.EmailField()
+    display_name = serializers.CharField(max_length=255)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["active", "suspended", "invited"], default="invited")
+
+
+class UserUpdateSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    display_name = serializers.CharField(max_length=255, required=False)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["active", "suspended", "invited"], required=False)
+
+
+class UserResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    email = serializers.EmailField()
+    display_name = serializers.CharField(max_length=255)
+    phone = serializers.CharField(max_length=32, allow_blank=True)
+    status = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()

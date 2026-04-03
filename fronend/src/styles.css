@@ -24,6 +24,10 @@ body {
   padding: 48px;
 }
 
+.page.full {
+  align-items: stretch;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(280px, 520px) minmax(320px, 520px);
@@ -95,6 +99,48 @@ body {
 
 .card {
   padding: 32px;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 960px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  padding: 28px;
+  display: grid;
+  gap: 20px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1d3aff 0%, #7a86ff 100%);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.menu {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f6f7ff;
+  color: #1d1f2a;
+  font-weight: 600;
 }
 
 h1, h2, h3 {

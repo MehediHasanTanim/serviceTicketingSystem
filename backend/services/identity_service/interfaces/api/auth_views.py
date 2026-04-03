@@ -26,6 +26,9 @@ from interfaces.api.serializers import (
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
     MeSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    UserResponseSerializer,
 )
 
 
@@ -242,6 +245,196 @@ class MeView(APIView):
                 "org_id": user.org_id,
                 "email": user.email,
                 "display_name": user.display_name,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class UserListCreateView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    @extend_schema(request=UserCreateSerializer, responses=UserResponseSerializer)
+    def post(self, request):
+        serializer = UserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if User.objects.filter(org_id=data["org_id"], email__iexact=data["email"]).exists():
+            return Response({"detail": "User already exists"}, status=status.HTTP_409_CONFLICT)
+
+        user = User.objects.create(
+            org_id=data["org_id"],
+            email=data["email"],
+            display_name=data["display_name"],
+            phone=data.get("phone", ""),
+            status=data.get("status", "invited"),
+        )
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(responses=UserResponseSerializer(many=True))
+    def get(self, request):
+        org_id = request.query_params.get("org_id")
+        qs = User.objects.all()
+        if org_id:
+            qs = qs.filter(org_id=org_id)
+        users = [
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            }
+            for user in qs.order_by("id")
+        ]
+        return Response(users, status=status.HTTP_200_OK)
+
+
+@extend_schema(responses=UserResponseSerializer)
+class UserDetailView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def get(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=UserUpdateSerializer, responses=UserResponseSerializer)
+    def patch(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        for field in ["email", "display_name", "phone", "status"]:
+            if field in data:
+                setattr(user, field, data[field])
+        user.save()
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(request=None, responses=UserResponseSerializer)
+class UserInviteView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def post(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user.status = "invited"
+        user.save(update_fields=["status", "updated_at"])
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(request=None, responses=UserResponseSerializer)
+class UserSuspendView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def post(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user.status = "suspended"
+        user.save(update_fields=["status", "updated_at"])
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(request=None, responses=UserResponseSerializer)
+class UserReactivateView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def post(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user.status = "active"
+        user.save(update_fields=["status", "updated_at"])
+
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "phone": user.phone,
+                "status": user.status,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
             },
             status=status.HTTP_200_OK,
         )
