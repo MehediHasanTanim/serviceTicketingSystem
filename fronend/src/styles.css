@@ -1,0 +1,83 @@
+:root {
+  color-scheme: light;
+  font-family: "DM Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: radial-gradient(circle at top, #f2f7ff 0%, #f7f8fb 45%, #ffffff 100%);
+  color: #1d1f2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  padding: 48px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(32, 56, 117, 0.12);
+}
+
+.card {
+  padding: 32px;
+  border-radius: 24px;
+  background: white;
+  box-shadow: 0 15px 45px rgba(39, 58, 110, 0.12);
+}
+
+h1, h2, h3 {
+  margin: 0 0 16px 0;
+}
+
+input, button {
+  font: inherit;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9dbe7;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.button {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 14px;
+  background: #1d3aff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: #f2f4ff;
+  color: #1d3aff;
+}
+
+.helper {
+  color: #6c748a;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #b00020;
+  font-size: 0.9rem;
+}
