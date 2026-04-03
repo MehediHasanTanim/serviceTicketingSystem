@@ -49,6 +49,15 @@ def _create_refresh_token(user):
     expires_at = timezone.now() + timedelta(days=REFRESH_TTL_DAYS)
     return RefreshToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
 
+def _require_admin(user, org_id: int):
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    return UserRole.objects.filter(
+        user=user,
+        role__org_id=org_id,
+        role__name__iexact="admin",
+    ).exists()
+
 
 @extend_schema(request=SignupSerializer)
 class SignupView(APIView):
@@ -259,6 +268,9 @@ class UserListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        if not _require_admin(request.user, data["org_id"]):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+
         if User.objects.filter(org_id=data["org_id"], email__iexact=data["email"]).exists():
             return Response({"detail": "User already exists"}, status=status.HTTP_409_CONFLICT)
 
@@ -287,9 +299,12 @@ class UserListCreateView(APIView):
     @extend_schema(responses=UserResponseSerializer(many=True))
     def get(self, request):
         org_id = request.query_params.get("org_id")
+        if not org_id:
+            return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not _require_admin(request.user, int(org_id)):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
         qs = User.objects.all()
-        if org_id:
-            qs = qs.filter(org_id=org_id)
+        qs = qs.filter(org_id=org_id)
         users = [
             {
                 "id": user.id,
@@ -314,6 +329,8 @@ class UserDetailView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _require_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         return Response(
             {
@@ -334,6 +351,8 @@ class UserDetailView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _require_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = UserUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -367,6 +386,8 @@ class UserInviteView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _require_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         user.status = "invited"
         user.save(update_fields=["status", "updated_at"])
@@ -394,6 +415,8 @@ class UserSuspendView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _require_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         user.status = "suspended"
         user.save(update_fields=["status", "updated_at"])
@@ -421,6 +444,8 @@ class UserReactivateView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _require_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
         user.status = "active"
         user.save(update_fields=["status", "updated_at"])
