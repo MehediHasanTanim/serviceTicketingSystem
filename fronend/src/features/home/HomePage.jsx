@@ -15,7 +15,7 @@ export function HomePage() {
       <div className="card" style={{ width: 'min(520px, 90vw)' }}>
         <h2>Welcome back</h2>
         <p className="helper">Signed in as</p>
-        <h3>{auth?.userName || 'User'}</h3>
+        <h3>{auth?.user?.display_name || auth?.userName || 'User'}</h3>
         <button className="button secondary" style={{ marginTop: '24px' }} onClick={onSignOut}>
           Sign out
         </button>

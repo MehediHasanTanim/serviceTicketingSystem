@@ -26,3 +26,10 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class ResetPasswordSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=64)
     new_password = serializers.CharField(min_length=8, write_only=True)
+
+
+class MeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    email = serializers.EmailField()
+    display_name = serializers.CharField(max_length=255)

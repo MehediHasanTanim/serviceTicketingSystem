@@ -28,17 +28,34 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => ({
     auth,
+    async fetchMe(accessToken) {
+      const token = accessToken || auth?.accessToken
+      if (!token) return null
+      return apiRequest('/me', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    },
     async login({ org_id, email, password }) {
       const data = await apiRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ org_id, email, password }),
+      })
+      const me = await apiRequest('/me', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
       })
       const next = {
         accessToken: data.token,
         refreshToken: data.refresh_token,
         expiresAt: data.expires_at,
         refreshExpiresAt: data.refresh_expires_at,
-        userName: email,
+        userName: me.display_name,
+        user: me,
       }
       setAuth(next)
       saveAuth(next)

@@ -25,6 +25,7 @@ from interfaces.api.serializers import (
     RefreshSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
+    MeSerializer,
 )
 
 
@@ -227,3 +228,20 @@ class ResetPasswordView(APIView):
         token.save(update_fields=["used_at"])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(request=None, responses=MeSerializer)
+class MeView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": user.id,
+                "org_id": user.org_id,
+                "email": user.email,
+                "display_name": user.display_name,
+            },
+            status=status.HTTP_200_OK,
+        )
