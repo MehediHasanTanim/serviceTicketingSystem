@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from infrastructure.db.core.models import (
     AuthToken,
@@ -38,6 +39,7 @@ def _create_auth_token(user):
     return AuthToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
 
 
+@extend_schema(request=SignupSerializer)
 class SignupView(APIView):
     authentication_classes = [BearerTokenAuthentication]
 
@@ -89,6 +91,7 @@ class SignupView(APIView):
         )
 
 
+@extend_schema(request=LoginSerializer)
 class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -107,6 +110,7 @@ class LoginView(APIView):
         return Response({"token": token.key, "expires_at": token.expires_at}, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=None)
 class LogoutView(APIView):
     authentication_classes = [BearerTokenAuthentication]
 
@@ -117,6 +121,7 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(request=None)
 class RefreshView(APIView):
     authentication_classes = [BearerTokenAuthentication]
 
@@ -128,6 +133,7 @@ class RefreshView(APIView):
         return Response({"token": token.key, "expires_at": token.expires_at}, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=ForgotPasswordSerializer)
 class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
@@ -153,6 +159,7 @@ class ForgotPasswordView(APIView):
         )
 
 
+@extend_schema(request=ResetPasswordSerializer)
 class ResetPasswordView(APIView):
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
