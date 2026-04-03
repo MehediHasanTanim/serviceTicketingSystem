@@ -1,9 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { LoginPage } from '../features/auth/LoginPage.jsx'
-import { HomePage } from '../features/home/HomePage.jsx'
-import { AuthProvider, useAuth } from '../features/auth/authContext.jsx'
+import { LoginPage } from '../features/auth/LoginPage'
+import { HomePage } from '../features/home/HomePage'
+import { AuthProvider, useAuth } from '../features/auth/authContext'
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
   if (!auth?.accessToken) {
     return <Navigate to="/login" replace />

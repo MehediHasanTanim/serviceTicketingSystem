@@ -1,6 +1,6 @@
 const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8011/api/v1'
 
-export async function apiRequest(path, options = {}) {
+export async function apiRequest(path: string, options: RequestInit = {}) {
   const url = `${baseUrl}${path}`
   const response = await fetch(url, {
     headers: {

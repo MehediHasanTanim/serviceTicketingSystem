@@ -1,11 +1,38 @@
 import React, { createContext, useContext, useMemo, useState } from 'react'
-import { apiRequest } from '../../shared/api/client.js'
+import { apiRequest } from '../../shared/api/client'
 
-const AuthContext = createContext(null)
+const AuthContext = createContext(null as AuthContextValue | null)
+
+type AuthState = {
+  accessToken: string
+  refreshToken: string
+  expiresAt: string
+  refreshExpiresAt: string
+  userName: string
+  user?: {
+    id: number
+    org_id: number
+    email: string
+    display_name: string
+  }
+}
+
+type LoginInput = {
+  org_id: number
+  email: string
+  password: string
+}
+
+type AuthContextValue = {
+  auth: AuthState | null
+  login: (input: LoginInput) => Promise<AuthState>
+  logout: () => Promise<void>
+  fetchMe: (accessToken?: string) => Promise<AuthState['user'] | null>
+}
 
 const STORAGE_KEY = 'ticketing.auth'
 
-function loadAuth() {
+function loadAuth(): AuthState | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
   try {
@@ -15,7 +42,7 @@ function loadAuth() {
   }
 }
 
-function saveAuth(auth) {
+function saveAuth(auth: AuthState | null) {
   if (!auth) {
     localStorage.removeItem(STORAGE_KEY)
     return
@@ -23,12 +50,12 @@ function saveAuth(auth) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(auth))
 }
 
-export function AuthProvider({ children }) {
-  const [auth, setAuth] = useState(() => loadAuth())
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [auth, setAuth] = useState<AuthState | null>(() => loadAuth())
 
   const value = useMemo(() => ({
     auth,
-    async fetchMe(accessToken) {
+    async fetchMe(accessToken?: string) {
       const token = accessToken || auth?.accessToken
       if (!token) return null
       return apiRequest('/me', {
@@ -38,7 +65,7 @@ export function AuthProvider({ children }) {
         },
       })
     },
-    async login({ org_id, email, password }) {
+    async login({ org_id, email, password }: LoginInput) {
       const data = await apiRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ org_id, email, password }),

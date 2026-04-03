@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './authContext.jsx'
+import { useAuth } from './authContext'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -9,11 +9,11 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const onChange = (key) => (event) => {
+  const onChange = (key: 'org_id' | 'email' | 'password') => (event: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }))
   }
 
-  const onSubmit = async (event) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setLoading(true)
