@@ -11,11 +11,14 @@ export function HomePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '48px' }}>
-      <div className="card" style={{ width: 'min(520px, 90vw)' }}>
+    <div className="page">
+      <div className="glass card" style={{ width: 'min(560px, 92vw)' }}>
         <h2>Welcome back</h2>
         <p className="helper">Signed in as</p>
         <h3>{auth?.user?.display_name || auth?.userName || 'User'}</h3>
+        <div className="hero-card" style={{ marginTop: '24px' }}>
+          You are ready to manage service requests and operational workflows.
+        </div>
         <button className="button secondary" style={{ marginTop: '24px' }} onClick={onSignOut}>
           Sign out
         </button>

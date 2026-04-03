@@ -32,52 +32,62 @@ export function LoginPage() {
   }
 
   return (
-    <div className="app-shell" style={{ padding: '48px' }}>
-      <div style={{ display: 'grid', alignContent: 'center', gap: '20px' }}>
-        <h1>Service Ticketing System</h1>
-        <p className="helper">
-          Log in to access your operational dashboard.
-        </p>
-      </div>
-      <div style={{ display: 'grid', alignContent: 'center' }}>
-        <form className="panel" onSubmit={onSubmit}>
-          <h2>Sign in</h2>
-          <label>
-            Organization ID
-            <input
-              className="input"
-              type="number"
-              min="1"
-              value={form.org_id}
-              onChange={onChange('org_id')}
-              required
-            />
-          </label>
-          <label style={{ marginTop: '16px', display: 'block' }}>
-            Email
-            <input
-              className="input"
-              type="email"
-              value={form.email}
-              onChange={onChange('email')}
-              required
-            />
-          </label>
-          <label style={{ marginTop: '16px', display: 'block' }}>
-            Password
-            <input
-              className="input"
-              type="password"
-              value={form.password}
-              onChange={onChange('password')}
-              required
-            />
-          </label>
-          {error && <p className="error" style={{ marginTop: '12px' }}>{error}</p>}
-          <button className="button" style={{ marginTop: '24px' }} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+    <div className="page">
+      <div className="layout">
+        <section className="glass hero">
+          <span className="hero-badge">Operations Suite</span>
+          <h1 className="hero-title">Service Ticketing System</h1>
+          <p className="helper">
+            Consolidate housekeeping, maintenance, and guest operations in one workspace.
+          </p>
+          <div className="hero-card">
+            <strong>Live Ops Insights</strong>
+            <p style={{ margin: '8px 0 0 0' }}>
+              Track service orders, compliance checks, and team performance in real time.
+            </p>
+          </div>
+        </section>
+        <section className="glass panel">
+          <form onSubmit={onSubmit}>
+            <h2>Sign in</h2>
+            <p className="helper">Use your organization credentials to continue.</p>
+            <label>
+              Organization ID
+              <input
+                className="input"
+                type="number"
+                min="1"
+                value={form.org_id}
+                onChange={onChange('org_id')}
+                required
+              />
+            </label>
+            <label style={{ marginTop: '16px', display: 'block' }}>
+              Email
+              <input
+                className="input"
+                type="email"
+                value={form.email}
+                onChange={onChange('email')}
+                required
+              />
+            </label>
+            <label style={{ marginTop: '16px', display: 'block' }}>
+              Password
+              <input
+                className="input"
+                type="password"
+                value={form.password}
+                onChange={onChange('password')}
+                required
+              />
+            </label>
+            {error && <p className="error" style={{ marginTop: '12px' }}>{error}</p>}
+            <button className="button" style={{ marginTop: '24px' }} disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   )
