@@ -137,6 +137,11 @@ class LogoutView(APIView):
         token = request.auth
         if token:
             token.delete()
+        RefreshToken.objects.filter(
+            user=request.user,
+            revoked_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        ).update(revoked_at=timezone.now())
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
