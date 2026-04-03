@@ -241,6 +241,19 @@ class AuthToken(models.Model):
         ]
 
 
+class RefreshToken(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "expires_at"], name="refresh_user_exp_idx"),
+        ]
+
+
 class PasswordResetToken(models.Model):
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")

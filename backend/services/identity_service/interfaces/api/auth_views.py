@@ -13,6 +13,7 @@ from infrastructure.db.core.models import (
     AuthToken,
     Organization,
     PasswordResetToken,
+    RefreshToken,
     User,
     UserCredential,
     UserRole,
@@ -21,12 +22,14 @@ from interfaces.api.authentication import BearerTokenAuthentication
 from interfaces.api.serializers import (
     SignupSerializer,
     LoginSerializer,
+    RefreshSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
 )
 
 
 TOKEN_TTL_DAYS = 7
+REFRESH_TTL_DAYS = 30
 RESET_TOKEN_TTL_MINUTES = 30
 
 
@@ -37,6 +40,10 @@ def _new_token_key():
 def _create_auth_token(user):
     expires_at = timezone.now() + timedelta(days=TOKEN_TTL_DAYS)
     return AuthToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
+
+def _create_refresh_token(user):
+    expires_at = timezone.now() + timedelta(days=REFRESH_TTL_DAYS)
+    return RefreshToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
 
 
 @extend_schema(request=SignupSerializer)
@@ -80,12 +87,15 @@ class SignupView(APIView):
                 last_password_change_at=timezone.now(),
             )
             token = _create_auth_token(user)
+            refresh = _create_refresh_token(user)
 
         return Response(
             {
                 "user_id": user.id,
                 "token": token.key,
                 "expires_at": token.expires_at,
+                "refresh_token": refresh.key,
+                "refresh_expires_at": refresh.expires_at,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -107,7 +117,16 @@ class LoginView(APIView):
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
         token = _create_auth_token(user)
-        return Response({"token": token.key, "expires_at": token.expires_at}, status=status.HTTP_200_OK)
+        refresh = _create_refresh_token(user)
+        return Response(
+            {
+                "token": token.key,
+                "expires_at": token.expires_at,
+                "refresh_token": refresh.key,
+                "refresh_expires_at": refresh.expires_at,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(request=None)
@@ -122,15 +141,35 @@ class LogoutView(APIView):
 
 
 @extend_schema(request=None)
+@extend_schema(request=RefreshSerializer)
 class RefreshView(APIView):
-    authentication_classes = [BearerTokenAuthentication]
-
     def post(self, request):
-        old_token = request.auth
-        if old_token:
-            old_token.delete()
-        token = _create_auth_token(request.user)
-        return Response({"token": token.key, "expires_at": token.expires_at}, status=status.HTTP_200_OK)
+        serializer = RefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refresh_key = serializer.validated_data["refresh_token"]
+
+        refresh = (
+            RefreshToken.objects.select_related("user")
+            .filter(key=refresh_key, revoked_at__isnull=True, expires_at__gt=timezone.now())
+            .first()
+        )
+        if not refresh:
+            return Response({"detail": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh.revoked_at = timezone.now()
+        refresh.save(update_fields=["revoked_at"])
+
+        token = _create_auth_token(refresh.user)
+        new_refresh = _create_refresh_token(refresh.user)
+        return Response(
+            {
+                "token": token.key,
+                "expires_at": token.expires_at,
+                "refresh_token": new_refresh.key,
+                "refresh_expires_at": new_refresh.expires_at,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(request=ForgotPasswordSerializer)

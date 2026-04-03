@@ -14,6 +14,9 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
+class RefreshSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(max_length=64)
+
 
 class ForgotPasswordSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
