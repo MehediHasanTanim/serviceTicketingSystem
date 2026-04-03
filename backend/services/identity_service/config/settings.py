@@ -17,9 +17,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "infrastructure.db.core.apps.CoreConfig",
     "drf_spectacular",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -79,3 +81,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "OpenAPI 3 schema for the Identity Service",
     "VERSION": "v1",
 }
+
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5176",
+).split(",")
