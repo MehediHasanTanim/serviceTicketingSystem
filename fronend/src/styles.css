@@ -136,11 +136,59 @@ body {
 }
 
 .menu-item {
-  padding: 10px 12px;
+  border: none;
+  text-align: left;
+  padding: 8px 10px;
   border-radius: 12px;
   background: #f6f7ff;
   color: #1d1f2a;
   font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.menu-item.active {
+  background: #1d3aff;
+  color: white;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7f8ff;
+}
+
+.status {
+  text-transform: capitalize;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e6e8f5;
+  color: #1d1f2a;
+}
+
+.status.active {
+  background: #d7f5e7;
+  color: #0f7a41;
+}
+
+.status.invited {
+  background: #fff1d6;
+  color: #b86b00;
+}
+
+.status.suspended {
+  background: #ffe0e0;
+  color: #b00020;
 }
 
 h1, h2, h3 {
