@@ -15,6 +15,21 @@ from django.contrib.auth.hashers import make_password
 
 from infrastructure.db.core.models import Organization, Role, User, UserCredential, UserRole
 
+DEFAULT_ROLES = [
+    ("super admin", "Platform owner with full access"),
+    ("admin", "System administrator"),
+    ("supervisor", "Department supervisor"),
+    ("housekeeper", "Housekeeping staff"),
+    ("maintenance", "Maintenance technician"),
+    ("front desk", "Front desk agent"),
+    ("concierge", "Concierge staff"),
+    ("guest experience", "Guest experience team"),
+    ("compliance", "Compliance officer"),
+    ("security", "Security staff"),
+    ("inventory", "Inventory controller"),
+    ("procurement", "Procurement officer"),
+]
+
 
 def main():
     org_name = os.environ.get("ADMIN_ORG_NAME", "Default Organization")
@@ -30,11 +45,16 @@ def main():
         },
     )
 
-    role, _ = Role.objects.get_or_create(
-        org=org,
-        name="admin",
-        defaults={"description": "System administrator"},
-    )
+    for role_name, description in DEFAULT_ROLES:
+        Role.objects.get_or_create(
+            org=org,
+            name=role_name,
+            defaults={"description": description},
+        )
+
+    role = Role.objects.filter(org=org, name__iexact="admin").first()
+    if not role:
+        role = Role.objects.create(org=org, name="admin", description="System administrator")
 
     user, created = User.objects.get_or_create(
         org=org,
