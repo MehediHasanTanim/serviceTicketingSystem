@@ -6,7 +6,7 @@ import { apiRequest } from '../../shared/api/client'
 export function HomePage() {
   const { auth, logout } = useAuth()
   const navigate = useNavigate()
-  const [activeMenu, setActiveMenu] = useState<'users' | 'profile' | 'security'>('users')
+  const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
   const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string }>>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState('')
@@ -50,41 +50,72 @@ export function HomePage() {
   return (
     <div className="page full">
       <div className="dashboard">
-        <aside className="glass sidebar">
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <aside className="sidebar-lite">
+          <div className="brand">
             <div className="avatar">{initials}</div>
             <div>
-              <div style={{ fontWeight: 700 }}>{displayName}</div>
-              <div className="helper" style={{ fontSize: '0.8rem' }}>
-                Logged in
-              </div>
+              <div className="brand-title">Service Ticketing</div>
+              <div className="brand-sub">{displayName}</div>
             </div>
           </div>
-          <div className="menu">
+          <nav className="menu">
+            <button
+              className={`menu-item ${activeMenu === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveMenu('dashboard')}
+            >
+              <span className="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <path d="M4 7h6v6H4zM14 7h6v6h-6zM4 17h6v3H4zM14 17h6v3h-6z" />
+                </svg>
+              </span>
+              <span>Dashboard</span>
+            </button>
             <button
               className={`menu-item ${activeMenu === 'users' ? 'active' : ''}`}
               onClick={() => setActiveMenu('users')}
             >
-              Users
+              <span className="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+                  <path d="M4 20a8 8 0 0 1 16 0" />
+                </svg>
+              </span>
+              <span>User Management</span>
             </button>
             <button
-              className={`menu-item ${activeMenu === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveMenu('profile')}
+              className={`menu-item ${activeMenu === 'roles' ? 'active' : ''}`}
+              onClick={() => setActiveMenu('roles')}
             >
-              Profile
+              <span className="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <path d="M5 9l7-4 7 4-7 4-7-4Z" />
+                  <path d="M5 9v6l7 4 7-4V9" />
+                </svg>
+              </span>
+              <span>Role Management</span>
             </button>
-            <button
-              className={`menu-item ${activeMenu === 'security' ? 'active' : ''}`}
-              onClick={() => setActiveMenu('security')}
-            >
-              Security
-            </button>
-          </div>
-          <button className="button secondary" onClick={onSignOut}>
-            Sign out
+          </nav>
+          <button className="logout" onClick={onSignOut}>
+            <span className="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <path d="M10 17l5-5-5-5" />
+                <path d="M15 12H3" />
+              </svg>
+            </span>
+            Logout
           </button>
         </aside>
         <section className="glass card">
+          {activeMenu === 'dashboard' && (
+            <>
+              <h2>Dashboard</h2>
+              <p className="helper">Dashboard will be implemented in upcoming release.</p>
+              <div className="hero-card" style={{ marginTop: '24px' }}>
+                Coming soon.
+              </div>
+            </>
+          )}
           {activeMenu === 'users' && (
             <>
               <h2>User Directory</h2>
@@ -106,22 +137,12 @@ export function HomePage() {
               )}
             </>
           )}
-          {activeMenu === 'profile' && (
+          {activeMenu === 'roles' && (
             <>
-              <h2>Profile</h2>
-              <p className="helper">Signed in as</p>
-              <h3>{displayName}</h3>
+              <h2>Role Management</h2>
+              <p className="helper">Role Management will be implemented in upcoming release.</p>
               <div className="hero-card" style={{ marginTop: '24px' }}>
-                Manage profile settings in upcoming releases.
-              </div>
-            </>
-          )}
-          {activeMenu === 'security' && (
-            <>
-              <h2>Security</h2>
-              <p className="helper">Manage your access and security preferences.</p>
-              <div className="hero-card" style={{ marginTop: '24px' }}>
-                Security controls will appear here.
+                Coming soon.
               </div>
             </>
           )}
