@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/authContext'
 import { apiRequest } from '../../shared/api/client'
@@ -21,6 +21,14 @@ export function HomePage() {
   })
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState('')
+
+  const canCreateUser = auth?.user?.is_admin === true
+  const canDeleteUser = (userRoles: string[] | undefined) => {
+    if (!auth?.user?.is_admin) return false
+    const normalized = (userRoles || []).map((r) => r.toLowerCase().replace('_', ' ').trim())
+    const targetIsSuper = normalized.includes('super admin')
+    return auth.user.is_super_admin ? true : !targetIsSuper
+  }
 
   const onSignOut = async () => {
     await logout()
@@ -67,19 +75,11 @@ export function HomePage() {
     }
   }, [auth?.accessToken, auth?.user?.org_id, canCreateUser])
 
-  const canCreateUser = auth?.user?.is_admin === true
-  const canDeleteUser = (userRoles: string[] | undefined) => {
-    if (!auth?.user?.is_admin) return false
-    const normalized = (userRoles || []).map((r) => r.toLowerCase().replace('_', ' ').trim())
-    const targetIsSuper = normalized.includes('super admin')
-    return auth.user.is_super_admin ? true : !targetIsSuper
-  }
-
-  const onCreateChange = (key: keyof typeof createForm) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const onCreateChange = (key: keyof typeof createForm) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setCreateForm((prev) => ({ ...prev, [key]: event.target.value }))
   }
 
-  const onCreateUser = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!auth?.accessToken || !auth?.user?.org_id) return
     setCreateLoading(true)
