@@ -204,6 +204,12 @@ body {
   padding: 8px 4px;
 }
 
+.logout-name {
+  font-size: 0.8rem;
+  color: #6c748a;
+  margin-right: 4px;
+}
+
 .logout .icon {
   width: 18px;
   height: 18px;

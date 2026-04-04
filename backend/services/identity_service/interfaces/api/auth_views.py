@@ -54,12 +54,24 @@ def _require_admin(user, org_id: int):
         return False
     if hasattr(user, "is_authenticated") and not user.is_authenticated:
         return False
+    return _is_admin(user, org_id)
+
+
+def _get_normalized_roles(user, org_id: int):
     roles = (
         UserRole.objects.filter(user=user, role__org_id=org_id)
         .select_related("role")
         .values_list("role__name", flat=True)
     )
-    normalized = {name.lower().strip().replace("_", " ") for name in roles}
+    return {name.lower().strip().replace("_", " ") for name in roles}
+
+
+def _is_super_admin(user, org_id: int):
+    return "super admin" in _get_normalized_roles(user, org_id)
+
+
+def _is_admin(user, org_id: int):
+    normalized = _get_normalized_roles(user, org_id)
     return "admin" in normalized or "super admin" in normalized
 
 
@@ -264,7 +276,8 @@ class MeView(APIView):
                 "email": user.email,
                 "display_name": user.display_name,
                 "roles": roles,
-                "is_admin": _require_admin(user, user.org_id),
+                "is_admin": _is_admin(user, user.org_id),
+                "is_super_admin": _is_super_admin(user, user.org_id),
             },
             status=status.HTTP_200_OK,
         )
@@ -410,6 +423,22 @@ class UserDetailView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(request=None, responses=None)
+    def delete(self, request, user_id: int):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+
+        target_is_super = _is_super_admin(user, user.org_id)
+        requester_is_super = _is_super_admin(request.user, user.org_id)
+        if target_is_super and not requester_is_super:
+            return Response({"detail": "Super admin required to delete this user"}, status=status.HTTP_403_FORBIDDEN)
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(request=None, responses=UserResponseSerializer)

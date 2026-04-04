@@ -35,6 +35,7 @@ class MeSerializer(serializers.Serializer):
     display_name = serializers.CharField(max_length=255)
     roles = serializers.ListField(child=serializers.CharField())
     is_admin = serializers.BooleanField()
+    is_super_admin = serializers.BooleanField()
 
 
 class UserCreateSerializer(serializers.Serializer):

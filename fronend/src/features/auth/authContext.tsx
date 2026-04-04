@@ -16,6 +16,7 @@ type AuthState = {
     display_name: string
     roles?: string[]
     is_admin?: boolean
+    is_super_admin?: boolean
   }
 }
 

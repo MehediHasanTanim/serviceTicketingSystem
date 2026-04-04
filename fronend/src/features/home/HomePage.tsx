@@ -48,6 +48,12 @@ export function HomePage() {
   }, [auth?.accessToken, auth?.user?.org_id])
 
   const canCreateUser = auth?.user?.is_admin === true
+  const canDeleteUser = (userRoles: string[] | undefined) => {
+    if (!auth?.user?.is_admin) return false
+    const normalized = (userRoles || []).map((r) => r.toLowerCase().replace('_', ' ').trim())
+    const targetIsSuper = normalized.includes('super admin')
+    return auth.user.is_super_admin ? true : !targetIsSuper
+  }
 
   const onCreateChange = (key: keyof typeof createForm) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setCreateForm((prev) => ({ ...prev, [key]: event.target.value }))
@@ -144,6 +150,7 @@ export function HomePage() {
             </button>
           </nav>
           <button className="logout" onClick={onSignOut}>
+            <span className="logout-name">{displayName}</span>
             <span className="icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -194,7 +201,32 @@ export function HomePage() {
                           </div>
                         )}
                       </div>
-                      <span className={`status ${user.status}`}>{user.status}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className={`status ${user.status}`}>{user.status}</span>
+                        {canDeleteUser(user.roles) && (
+                          <button
+                            className="button secondary small"
+                            onClick={async () => {
+                              if (!auth?.accessToken || !auth?.user?.org_id) return
+                              const ok = window.confirm(`Delete ${user.display_name}?`)
+                              if (!ok) return
+                              await apiRequest(`/users/${user.id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                  Authorization: `Bearer ${auth.accessToken}`,
+                                },
+                              })
+                              const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
+                                method: 'GET',
+                                headers: { Authorization: `Bearer ${auth.accessToken}` },
+                              })
+                              setUsers(data || [])
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
