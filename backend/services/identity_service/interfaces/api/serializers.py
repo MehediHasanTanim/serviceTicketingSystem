@@ -59,5 +59,6 @@ class UserResponseSerializer(serializers.Serializer):
     display_name = serializers.CharField(max_length=255)
     phone = serializers.CharField(max_length=32, allow_blank=True)
     status = serializers.CharField()
+    roles = serializers.ListField(child=serializers.CharField(), required=False)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()

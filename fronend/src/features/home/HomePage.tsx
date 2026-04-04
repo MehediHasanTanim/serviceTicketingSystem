@@ -7,7 +7,7 @@ export function HomePage() {
   const { auth, logout } = useAuth()
   const navigate = useNavigate()
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
-  const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string }>>([])
+  const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string; roles?: string[] }>>([])
   const [showCreate, setShowCreate] = useState(false)
   const [createError, setCreateError] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
@@ -186,6 +186,13 @@ export function HomePage() {
                       <div>
                         <strong>{user.display_name}</strong>
                         <div className="helper">{user.email}</div>
+                        {user.roles && user.roles.length > 0 && (
+                          <div className="role-tags">
+                            {user.roles.map((role) => (
+                              <span key={role} className="role-tag">{role}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <span className={`status ${user.status}`}>{user.status}</span>
                     </div>

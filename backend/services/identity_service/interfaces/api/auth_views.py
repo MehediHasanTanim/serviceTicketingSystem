@@ -50,13 +50,17 @@ def _create_refresh_token(user):
     return RefreshToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
 
 def _require_admin(user, org_id: int):
-    if not user or not getattr(user, "is_authenticated", False):
+    if not user:
         return False
-    return UserRole.objects.filter(
-        user=user,
-        role__org_id=org_id,
-        role__name__iregex=r"^(admin|super admin|super_admin)$",
-    ).exists()
+    if hasattr(user, "is_authenticated") and not user.is_authenticated:
+        return False
+    roles = (
+        UserRole.objects.filter(user=user, role__org_id=org_id)
+        .select_related("role")
+        .values_list("role__name", flat=True)
+    )
+    normalized = {name.lower().strip().replace("_", " ") for name in roles}
+    return "admin" in normalized or "super admin" in normalized
 
 
 @extend_schema(request=SignupSerializer)
@@ -288,6 +292,11 @@ class UserListCreateView(APIView):
             phone=data.get("phone", ""),
             status=data.get("status", "invited"),
         )
+        roles = list(
+            UserRole.objects.filter(user=user)
+            .select_related("role")
+            .values_list("role__name", flat=True)
+        )
 
         return Response(
             {
@@ -297,6 +306,7 @@ class UserListCreateView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": roles,
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
@@ -312,19 +322,26 @@ class UserListCreateView(APIView):
             return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
         qs = User.objects.all()
         qs = qs.filter(org_id=org_id)
-        users = [
-            {
-                "id": user.id,
-                "org_id": user.org_id,
-                "email": user.email,
-                "display_name": user.display_name,
-                "phone": user.phone,
-                "status": user.status,
-                "created_at": user.created_at,
-                "updated_at": user.updated_at,
-            }
-            for user in qs.order_by("id")
-        ]
+        users = []
+        for user in qs.order_by("id"):
+            roles = list(
+                UserRole.objects.filter(user=user)
+                .select_related("role")
+                .values_list("role__name", flat=True)
+            )
+            users.append(
+                {
+                    "id": user.id,
+                    "org_id": user.org_id,
+                    "email": user.email,
+                    "display_name": user.display_name,
+                    "phone": user.phone,
+                    "status": user.status,
+                    "roles": roles,
+                    "created_at": user.created_at,
+                    "updated_at": user.updated_at,
+                }
+            )
         return Response(users, status=status.HTTP_200_OK)
 
 
@@ -347,6 +364,11 @@ class UserDetailView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": list(
+                    UserRole.objects.filter(user=user)
+                    .select_related("role")
+                    .values_list("role__name", flat=True)
+                ),
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
@@ -378,6 +400,11 @@ class UserDetailView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": list(
+                    UserRole.objects.filter(user=user)
+                    .select_related("role")
+                    .values_list("role__name", flat=True)
+                ),
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
@@ -407,6 +434,11 @@ class UserInviteView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": list(
+                    UserRole.objects.filter(user=user)
+                    .select_related("role")
+                    .values_list("role__name", flat=True)
+                ),
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
@@ -436,6 +468,11 @@ class UserSuspendView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": list(
+                    UserRole.objects.filter(user=user)
+                    .select_related("role")
+                    .values_list("role__name", flat=True)
+                ),
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
@@ -465,6 +502,11 @@ class UserReactivateView(APIView):
                 "display_name": user.display_name,
                 "phone": user.phone,
                 "status": user.status,
+                "roles": list(
+                    UserRole.objects.filter(user=user)
+                    .select_related("role")
+                    .values_list("role__name", flat=True)
+                ),
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
             },
