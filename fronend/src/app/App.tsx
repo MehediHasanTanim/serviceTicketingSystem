@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '../features/auth/LoginPage'
+import { ActivatePage } from '../features/auth/ActivatePage'
 import { HomePage } from '../features/home/HomePage'
 import { AuthProvider, useAuth } from '../features/auth/authContext'
 
@@ -18,6 +19,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/activate" element={<ActivatePage />} />
           <Route
             path="/home"
             element={

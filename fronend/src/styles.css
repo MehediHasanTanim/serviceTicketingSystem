@@ -354,3 +354,8 @@ input, button {
   color: #b00020;
   font-size: 0.9rem;
 }
+
+.success {
+  color: #1f8b4c;
+  font-size: 0.9rem;
+}

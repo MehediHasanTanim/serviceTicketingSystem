@@ -5,7 +5,7 @@ services:
     build:
       context: ./backend/services/identity_service
     env_file:
-      - ./backend/services/identity_service/.env.example
+      - ./backend/.env
     volumes:
       - ./backend/services/identity_service:/app
     ports:
