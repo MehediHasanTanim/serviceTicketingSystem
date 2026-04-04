@@ -16,6 +16,7 @@ from infrastructure.db.core.models import (
     RefreshToken,
     User,
     UserCredential,
+    UserDepartment,
     UserRole,
 )
 from interfaces.api.authentication import BearerTokenAuthentication
@@ -437,6 +438,13 @@ class UserDetailView(APIView):
         if target_is_super and not requester_is_super:
             return Response({"detail": "Super admin required to delete this user"}, status=status.HTTP_403_FORBIDDEN)
 
+        # clean protected relations before deleting user
+        UserRole.objects.filter(user=user).delete()
+        UserDepartment.objects.filter(user=user).delete()
+        AuthToken.objects.filter(user=user).delete()
+        RefreshToken.objects.filter(user=user).delete()
+        PasswordResetToken.objects.filter(user=user).delete()
+        UserCredential.objects.filter(user=user).delete()
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
