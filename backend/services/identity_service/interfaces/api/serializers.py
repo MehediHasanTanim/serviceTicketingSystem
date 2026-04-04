@@ -28,6 +28,11 @@ class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(min_length=8, write_only=True)
 
 
+class ActivateInviteSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=64)
+    password = serializers.CharField(min_length=8, write_only=True)
+
+
 class MeSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     org_id = serializers.IntegerField()

@@ -113,6 +113,21 @@ export function HomePage() {
     }
   }
 
+  const resendInvite = async (userId: number) => {
+    if (!auth?.accessToken || !auth?.user?.org_id) return
+    await apiRequest(`/users/${userId}/invite`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${auth.accessToken}`,
+      },
+    })
+    const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${auth.accessToken}` },
+    })
+    setUsers(data || [])
+  }
+
   const displayName = auth?.user?.display_name || auth?.userName || 'User'
   const initials = displayName
     .split(' ')
@@ -224,6 +239,14 @@ export function HomePage() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span className={`status ${user.status}`}>{user.status}</span>
+                        {canCreateUser && user.status === 'invited' && (
+                          <button
+                            className="button secondary small"
+                            onClick={() => resendInvite(user.id)}
+                          >
+                            Resend Invite
+                          </button>
+                        )}
                         {canDeleteUser(user.roles) && (
                           <button
                             className="button secondary small"

@@ -2,8 +2,10 @@ import secrets
 from datetime import timedelta
 
 from django.db import transaction
+from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,6 +13,7 @@ from drf_spectacular.utils import extend_schema
 
 from infrastructure.db.core.models import (
     AuthToken,
+    InviteToken,
     Organization,
     PasswordResetToken,
     RefreshToken,
@@ -27,6 +30,7 @@ from interfaces.api.serializers import (
     RefreshSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
+    ActivateInviteSerializer,
     MeSerializer,
     UserCreateSerializer,
     UserUpdateSerializer,
@@ -37,6 +41,7 @@ from interfaces.api.serializers import (
 TOKEN_TTL_DAYS = 7
 REFRESH_TTL_DAYS = 30
 RESET_TOKEN_TTL_MINUTES = 30
+INVITE_TOKEN_TTL_HOURS = getattr(settings, "INVITE_TOKEN_TTL_HOURS", 72)
 
 
 def _new_token_key():
@@ -50,6 +55,38 @@ def _create_auth_token(user):
 def _create_refresh_token(user):
     expires_at = timezone.now() + timedelta(days=REFRESH_TTL_DAYS)
     return RefreshToken.objects.create(key=_new_token_key(), user=user, expires_at=expires_at)
+
+
+def _create_invite_token(user):
+    expires_at = timezone.now() + timedelta(hours=INVITE_TOKEN_TTL_HOURS)
+    return InviteToken.objects.create(token=_new_token_key(), user=user, expires_at=expires_at)
+
+
+def _build_invite_link(token: str) -> str:
+    base = getattr(settings, "FRONTEND_APP_URL", "http://localhost:5176").rstrip("/")
+    return f"{base}/activate?token={token}"
+
+
+def _send_invite_email(user, invite_token: InviteToken):
+    if not settings.EMAIL_HOST:
+        return
+    subject = "You are invited to Service Ticketing"
+    activation_link = _build_invite_link(invite_token.token)
+    message = (
+        f"Hello {user.display_name},\n\n"
+        "You have been invited to Service Ticketing.\n"
+        f"Activate your account here: {activation_link}\n\n"
+        "If you did not expect this invitation, you can ignore this email."
+    )
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+    invite_token.sent_at = timezone.now()
+    invite_token.save(update_fields=["sent_at"])
 
 def _require_admin(user, org_id: int):
     if not user:
@@ -260,6 +297,36 @@ class ResetPasswordView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(request=ActivateInviteSerializer)
+class ActivateInviteView(APIView):
+    def post(self, request):
+        serializer = ActivateInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        invite = (
+            InviteToken.objects.select_related("user")
+            .filter(token=data["token"], used_at__isnull=True, expires_at__gt=timezone.now())
+            .first()
+        )
+        if not invite:
+            return Response({"detail": "Invalid or expired invite token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            credential, _ = UserCredential.objects.get_or_create(user=invite.user)
+            credential.password_hash = make_password(data["password"])
+            credential.last_password_change_at = timezone.now()
+            credential.save()
+
+            invite.user.status = "active"
+            invite.user.save(update_fields=["status", "updated_at"])
+
+            invite.used_at = timezone.now()
+            invite.save(update_fields=["used_at"])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(request=None, responses=MeSerializer)
 class MeView(APIView):
     authentication_classes = [BearerTokenAuthentication]
@@ -313,6 +380,9 @@ class UserListCreateView(APIView):
             if not role:
                 return Response({"detail": "Role not found"}, status=status.HTTP_400_BAD_REQUEST)
             UserRole.objects.get_or_create(user=user, role=role)
+        if user.status == "invited":
+            invite_token = _create_invite_token(user)
+            _send_invite_email(user, invite_token)
         roles = list(
             UserRole.objects.filter(user=user)
             .select_related("role")
@@ -483,6 +553,8 @@ class UserInviteView(APIView):
 
         user.status = "invited"
         user.save(update_fields=["status", "updated_at"])
+        invite_token = _create_invite_token(user)
+        _send_invite_email(user, invite_token)
 
         return Response(
             {
