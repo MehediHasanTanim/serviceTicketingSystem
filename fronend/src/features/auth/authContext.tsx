@@ -14,6 +14,8 @@ type AuthState = {
     org_id: number
     email: string
     display_name: string
+    roles?: string[]
+    is_admin?: boolean
   }
 }
 

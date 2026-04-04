@@ -8,6 +8,15 @@ export function HomePage() {
   const navigate = useNavigate()
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
   const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string }>>([])
+  const [showCreate, setShowCreate] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    display_name: '',
+    phone: '',
+    status: 'invited',
+  })
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState('')
 
@@ -37,6 +46,45 @@ export function HomePage() {
     }
     loadUsers()
   }, [auth?.accessToken, auth?.user?.org_id])
+
+  const canCreateUser = auth?.user?.is_admin === true
+
+  const onCreateChange = (key: keyof typeof createForm) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setCreateForm((prev) => ({ ...prev, [key]: event.target.value }))
+  }
+
+  const onCreateUser = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!auth?.accessToken || !auth?.user?.org_id) return
+    setCreateLoading(true)
+    setCreateError('')
+    try {
+      await apiRequest('/users', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${auth.accessToken}`,
+        },
+        body: JSON.stringify({
+          org_id: auth.user.org_id,
+          email: createForm.email.trim(),
+          display_name: createForm.display_name.trim(),
+          phone: createForm.phone.trim(),
+          status: createForm.status,
+        }),
+      })
+      setShowCreate(false)
+      setCreateForm({ email: '', display_name: '', phone: '', status: 'invited' })
+      const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      })
+      setUsers(data || [])
+    } catch (err: any) {
+      setCreateError(err.details?.detail || err.message)
+    } finally {
+      setCreateLoading(false)
+    }
+  }
 
   const displayName = auth?.user?.display_name || auth?.userName || 'User'
   const initials = displayName
@@ -118,8 +166,17 @@ export function HomePage() {
           )}
           {activeMenu === 'users' && (
             <>
-              <h2>User Directory</h2>
-              <p className="helper">Manage users in your organization.</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <h2>User Directory</h2>
+                  <p className="helper">Manage users in your organization.</p>
+                </div>
+                {canCreateUser && (
+                  <button className="button small" onClick={() => setShowCreate(true)}>
+                    + User
+                  </button>
+                )}
+              </div>
               {loadingUsers && <p className="helper">Loading users...</p>}
               {usersError && <p className="error">{usersError}</p>}
               {!loadingUsers && !usersError && (
@@ -145,6 +202,59 @@ export function HomePage() {
                 Coming soon.
               </div>
             </>
+          )}
+          {showCreate && (
+            <div className="modal-backdrop" onClick={() => setShowCreate(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3>Add User</h3>
+                <form onSubmit={onCreateUser} style={{ display: 'grid', gap: '12px' }}>
+                  <label>
+                    Name
+                    <input
+                      className="input"
+                      value={createForm.display_name}
+                      onChange={onCreateChange('display_name')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Email
+                    <input
+                      className="input"
+                      type="email"
+                      value={createForm.email}
+                      onChange={onCreateChange('email')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Phone
+                    <input
+                      className="input"
+                      value={createForm.phone}
+                      onChange={onCreateChange('phone')}
+                    />
+                  </label>
+                  <label>
+                    Status
+                    <select className="input" value={createForm.status} onChange={onCreateChange('status')}>
+                      <option value="invited">Invited</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </label>
+                  {createError && <p className="error">{createError}</p>}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button type="button" className="button secondary small" onClick={() => setShowCreate(false)}>
+                      Cancel
+                    </button>
+                    <button className="button small" disabled={createLoading}>
+                      {createLoading ? 'Creating...' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
         </section>
       </div>

@@ -103,7 +103,7 @@ body {
 
 .dashboard {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 32px;
 }
 
@@ -113,43 +113,101 @@ body {
   }
 }
 
-.sidebar {
-  padding: 28px;
+.sidebar-lite {
+  background: white;
+  border-radius: 28px;
+  padding: 28px 22px;
   display: grid;
-  gap: 20px;
+  gap: 26px;
+  box-shadow: 0 20px 60px rgba(29, 34, 79, 0.12);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.brand-sub {
+  font-size: 0.8rem;
+  color: #6c748a;
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #1d3aff 0%, #7a86ff 100%);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #5f66ff 0%, #7a86ff 100%);
   color: white;
   display: grid;
   place-items: center;
   font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .menu {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .menu-item {
   border: none;
   text-align: left;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: #f6f7ff;
-  color: #1d1f2a;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: transparent;
+  color: #2a2f45;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   cursor: pointer;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-item .icon {
+  width: 18px;
+  height: 18px;
+  color: #5a627a;
 }
 
 .menu-item.active {
-  background: #1d3aff;
-  color: white;
+  background: #f1f0ff;
+  color: #4b55ff;
+}
+
+.menu-item.active .icon {
+  color: #4b55ff;
+}
+
+.menu-item .chevron {
+  font-size: 1.2rem;
+  color: inherit;
+}
+
+.logout {
+  margin-top: auto;
+  border: none;
+  background: transparent;
+  color: #ff4d4d;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+
+.logout .icon {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
 }
 
 .list {
@@ -165,6 +223,23 @@ body {
   padding: 14px 16px;
   border-radius: 16px;
   background: #f7f8ff;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: min(420px, 92vw);
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(29, 34, 79, 0.2);
 }
 
 .status {
@@ -225,6 +300,17 @@ input, button {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button.small {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  border-radius: 12px;
+}
+
+.button.secondary.small {
+  width: auto;
 }
 
 .button:hover {

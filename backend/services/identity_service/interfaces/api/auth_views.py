@@ -55,7 +55,7 @@ def _require_admin(user, org_id: int):
     return UserRole.objects.filter(
         user=user,
         role__org_id=org_id,
-        role__name__iexact="admin",
+        role__name__iregex=r"^(admin|super admin|super_admin)$",
     ).exists()
 
 
@@ -248,12 +248,19 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
+        roles = list(
+            UserRole.objects.filter(user=user)
+            .select_related("role")
+            .values_list("role__name", flat=True)
+        )
         return Response(
             {
                 "id": user.id,
                 "org_id": user.org_id,
                 "email": user.email,
                 "display_name": user.display_name,
+                "roles": roles,
+                "is_admin": _require_admin(user, user.org_id),
             },
             status=status.HTTP_200_OK,
         )
