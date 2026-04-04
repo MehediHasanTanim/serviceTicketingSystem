@@ -9,6 +9,7 @@ export function HomePage() {
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
   const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string; roles?: string[] }>>([])
   const [showCreate, setShowCreate] = useState(false)
+  const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([])
   const [createError, setCreateError] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
   const [createForm, setCreateForm] = useState({
@@ -16,6 +17,7 @@ export function HomePage() {
     display_name: '',
     phone: '',
     status: 'invited',
+    role_name: '',
   })
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState('')
@@ -47,6 +49,24 @@ export function HomePage() {
     loadUsers()
   }, [auth?.accessToken, auth?.user?.org_id])
 
+  useEffect(() => {
+    const loadRoles = async () => {
+      if (!auth?.accessToken || !auth?.user?.org_id) return
+      try {
+        const data = await apiRequest(`/roles?org_id=${auth.user.org_id}`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        })
+        setRoles(data || [])
+      } catch {
+        setRoles([])
+      }
+    }
+    if (canCreateUser) {
+      loadRoles()
+    }
+  }, [auth?.accessToken, auth?.user?.org_id, canCreateUser])
+
   const canCreateUser = auth?.user?.is_admin === true
   const canDeleteUser = (userRoles: string[] | undefined) => {
     if (!auth?.user?.is_admin) return false
@@ -76,10 +96,11 @@ export function HomePage() {
           display_name: createForm.display_name.trim(),
           phone: createForm.phone.trim(),
           status: createForm.status,
+          role_name: createForm.role_name || undefined,
         }),
       })
       setShowCreate(false)
-      setCreateForm({ email: '', display_name: '', phone: '', status: 'invited' })
+      setCreateForm({ email: '', display_name: '', phone: '', status: 'invited', role_name: '' })
       const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${auth.accessToken}` },
@@ -280,6 +301,15 @@ export function HomePage() {
                       <option value="invited">Invited</option>
                       <option value="active">Active</option>
                       <option value="suspended">Suspended</option>
+                    </select>
+                  </label>
+                  <label>
+                    Role
+                    <select className="input" value={createForm.role_name} onChange={onCreateChange('role_name')}>
+                      <option value="">Select role</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.name}>{role.name}</option>
+                      ))}
                     </select>
                   </label>
                   {createError && <p className="error">{createError}</p>}

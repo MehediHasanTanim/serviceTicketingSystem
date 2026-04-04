@@ -14,6 +14,7 @@ from infrastructure.db.core.models import (
     Organization,
     PasswordResetToken,
     RefreshToken,
+    Role,
     User,
     UserCredential,
     UserDepartment,
@@ -306,6 +307,12 @@ class UserListCreateView(APIView):
             phone=data.get("phone", ""),
             status=data.get("status", "invited"),
         )
+        role_name = data.get("role_name")
+        if role_name:
+            role = Role.objects.filter(org_id=data["org_id"], name__iexact=role_name).first()
+            if not role:
+                return Response({"detail": "Role not found"}, status=status.HTTP_400_BAD_REQUEST)
+            UserRole.objects.get_or_create(user=user, role=role)
         roles = list(
             UserRole.objects.filter(user=user)
             .select_related("role")
@@ -357,6 +364,20 @@ class UserListCreateView(APIView):
                 }
             )
         return Response(users, status=status.HTTP_200_OK)
+
+
+class RoleListView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def get(self, request):
+        org_id = request.query_params.get("org_id")
+        if not org_id:
+            return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not _is_admin(request.user, int(org_id)):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+
+        roles = list(Role.objects.filter(org_id=org_id).values("id", "name"))
+        return Response(roles, status=status.HTTP_200_OK)
 
 
 @extend_schema(responses=UserResponseSerializer)
