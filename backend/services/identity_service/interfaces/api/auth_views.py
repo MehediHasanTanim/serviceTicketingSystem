@@ -78,9 +78,21 @@ def _send_invite_email(user, invite_token: InviteToken):
         f"Activate your account here: {activation_link}\n\n"
         "If you did not expect this invitation, you can ignore this email."
     )
+    html_message = f"""
+        <div style="font-family: Arial, sans-serif; background: #f6f7fb; padding: 24px;">
+          <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);">
+            <h2 style="margin: 0 0 12px; color: #1f2a44;">You're invited</h2>
+            <p style="margin: 0 0 16px; color: #4b5563;">Hello {user.display_name},</p>
+            <p style="margin: 0 0 20px; color: #4b5563;">You have been invited to Service Ticketing. Click below to activate your account.</p>
+            <a href="{activation_link}" style="display: inline-block; padding: 12px 20px; background: #1d3aff; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600;">Activate Account</a>
+            <p style="margin: 20px 0 0; color: #6b7280; font-size: 13px;">If you did not expect this invitation, you can ignore this email.</p>
+          </div>
+        </div>
+    """
     send_mail(
         subject=subject,
         message=message,
+        html_message=html_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
         fail_silently=False,
@@ -310,7 +322,11 @@ class ActivateInviteView(APIView):
             .first()
         )
         if not invite:
-            return Response({"detail": "Invalid or expired invite token"}, status=status.HTTP_400_BAD_REQUEST)
+            if InviteToken.objects.filter(token=data["token"], used_at__isnull=False).exists():
+                return Response({"detail": "Invite token already used"}, status=status.HTTP_400_BAD_REQUEST)
+            if InviteToken.objects.filter(token=data["token"], expires_at__lte=timezone.now()).exists():
+                return Response({"detail": "Invite token expired"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid invite token"}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
             credential, _ = UserCredential.objects.get_or_create(user=invite.user)
@@ -496,6 +512,13 @@ class UserDetailView(APIView):
             if field in data:
                 setattr(user, field, data[field])
         user.save()
+        role_name = data.get("role_name")
+        if role_name:
+            role = Role.objects.filter(org_id=user.org_id, name__iexact=role_name).first()
+            if not role:
+                return Response({"detail": "Role not found"}, status=status.HTTP_400_BAD_REQUEST)
+            UserRole.objects.filter(user=user).delete()
+            UserRole.objects.get_or_create(user=user, role=role)
 
         return Response(
             {

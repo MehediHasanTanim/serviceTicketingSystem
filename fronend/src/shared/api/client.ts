@@ -2,12 +2,16 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8011/api/
 
 export async function apiRequest(path: string, options: RequestInit = {}) {
   const url = `${baseUrl}${path}`
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+  })
+  if (options.headers) {
+    const extra = new Headers(options.headers)
+    extra.forEach((value, key) => headers.set(key, value))
+  }
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   })
 
   if (response.status === 204) {

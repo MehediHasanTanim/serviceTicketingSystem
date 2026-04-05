@@ -359,3 +359,16 @@ input, button {
   color: #1f8b4c;
   font-size: 0.9rem;
 }
+
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: #1d3aff;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(29, 58, 255, 0.3);
+  z-index: 1000;
+}

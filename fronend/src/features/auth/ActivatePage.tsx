@@ -37,10 +37,17 @@ export function ActivatePage() {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       })
-      setSuccess('Account activated. Redirecting to login...')
-      setTimeout(() => navigate('/login'), 1200)
+      setSuccess('Account activated. Redirecting...')
+      setTimeout(() => navigate('/activate/success'), 800)
     } catch (err: any) {
-      setError(err.details?.detail || err.message || 'Activation failed.')
+      const detail = err.details?.detail || err.message || 'Activation failed.'
+      if (detail.toLowerCase().includes('expired')) {
+        setError('This invite link has expired. Please request a new invite from your admin.')
+      } else if (detail.toLowerCase().includes('already used')) {
+        setError('This invite link was already used. Please sign in or request a new invite.')
+      } else {
+        setError(detail)
+      }
     } finally {
       setLoading(false)
     }

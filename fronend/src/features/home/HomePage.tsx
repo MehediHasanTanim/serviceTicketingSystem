@@ -7,11 +7,16 @@ export function HomePage() {
   const { auth, logout } = useAuth()
   const navigate = useNavigate()
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
-  const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; status: string; roles?: string[] }>>([])
+  const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; phone?: string; status: string; roles?: string[] }>>([])
   const [showCreate, setShowCreate] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editUserId, setEditUserId] = useState<number | null>(null)
   const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([])
   const [createError, setCreateError] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
+  const [inviteMessage, setInviteMessage] = useState('')
+  const [editMessage, setEditMessage] = useState('')
+  const [inviteLoadingId, setInviteLoadingId] = useState<number | null>(null)
   const [createForm, setCreateForm] = useState({
     email: '',
     display_name: '',
@@ -19,6 +24,15 @@ export function HomePage() {
     status: 'invited',
     role_name: '',
   })
+  const [editForm, setEditForm] = useState({
+    email: '',
+    display_name: '',
+    phone: '',
+    status: 'active',
+    role_name: '',
+  })
+  const [editError, setEditError] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState('')
 
@@ -113,19 +127,94 @@ export function HomePage() {
     }
   }
 
+  const openEdit = (user: { id: number; email: string; display_name: string; phone?: string; status: string; roles?: string[] }) => {
+    setEditUserId(user.id)
+    setEditForm({
+      email: user.email,
+      display_name: user.display_name,
+      phone: user.phone || '',
+      status: user.status,
+      role_name: (user.roles && user.roles[0]) || '',
+    })
+    setEditError('')
+    setShowEdit(true)
+  }
+
+  const onEditChange = (key: keyof typeof editForm) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setEditForm((prev) => ({ ...prev, [key]: event.target.value }))
+  }
+
+  const onEditUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!auth?.accessToken || !auth?.user?.org_id || !editUserId) return
+    setEditLoading(true)
+    setEditError('')
+    setEditMessage('')
+    try {
+      await apiRequest(`/users/${editUserId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${auth.accessToken}`,
+        },
+        body: JSON.stringify({
+          email: editForm.email.trim(),
+          display_name: editForm.display_name.trim(),
+          phone: editForm.phone.trim(),
+          status: editForm.status,
+        }),
+      })
+
+      if (editForm.role_name) {
+        await apiRequest(`/users/${editUserId}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+          },
+          body: JSON.stringify({
+            role_name: editForm.role_name,
+          }),
+        })
+      }
+
+      const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      })
+      setUsers(data || [])
+      setShowEdit(false)
+      setEditMessage('User updated successfully.')
+      setTimeout(() => setEditMessage(''), 2000)
+    } catch (err: any) {
+      setEditError(err.details?.detail || err.message || 'Failed to update user.')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
   const resendInvite = async (userId: number) => {
     if (!auth?.accessToken || !auth?.user?.org_id) return
-    await apiRequest(`/users/${userId}/invite`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${auth.accessToken}`,
-      },
-    })
-    const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${auth.accessToken}` },
-    })
-    setUsers(data || [])
+    setInviteMessage('')
+    setUsersError('')
+    setInviteLoadingId(userId)
+    try {
+      await apiRequest(`/users/${userId}/invite`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${auth.accessToken}`,
+        },
+      })
+      const data = await apiRequest(`/users?org_id=${auth.user.org_id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      })
+      setUsers(data || [])
+      setInviteMessage('Invite has been resent.')
+      setTimeout(() => setInviteMessage(''), 2000)
+    } catch (err: any) {
+      setUsersError(err.details?.detail || err.message || 'Failed to resend invite.')
+    } finally {
+      setInviteLoadingId(null)
+    }
   }
 
   const displayName = auth?.user?.display_name || auth?.userName || 'User'
@@ -139,6 +228,7 @@ export function HomePage() {
 
   return (
     <div className="page full">
+      {(inviteMessage || editMessage) && <div className="toast">{inviteMessage || editMessage}</div>}
       <div className="dashboard">
         <aside className="sidebar-lite">
           <div className="brand">
@@ -239,12 +329,18 @@ export function HomePage() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span className={`status ${user.status}`}>{user.status}</span>
+                        {canCreateUser && (
+                          <button className="button secondary small" onClick={() => openEdit(user)}>
+                            Edit
+                          </button>
+                        )}
                         {canCreateUser && user.status === 'invited' && (
                           <button
                             className="button secondary small"
                             onClick={() => resendInvite(user.id)}
+                            disabled={inviteLoadingId === user.id}
                           >
-                            Resend Invite
+                            {inviteLoadingId === user.id ? 'Resending...' : 'Resend Invite'}
                           </button>
                         )}
                         {canDeleteUser(user.roles) && (
@@ -342,6 +438,68 @@ export function HomePage() {
                     </button>
                     <button className="button small" disabled={createLoading}>
                       {createLoading ? 'Creating...' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+          {showEdit && (
+            <div className="modal-backdrop" onClick={() => setShowEdit(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3>Edit User</h3>
+                <form onSubmit={onEditUser} style={{ display: 'grid', gap: '12px' }}>
+                  <label>
+                    Name
+                    <input
+                      className="input"
+                      value={editForm.display_name}
+                      onChange={onEditChange('display_name')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Email
+                    <input
+                      className="input"
+                      type="email"
+                      value={editForm.email}
+                      onChange={onEditChange('email')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Phone
+                    <input
+                      className="input"
+                      value={editForm.phone}
+                      onChange={onEditChange('phone')}
+                    />
+                  </label>
+                  <label>
+                    Status
+                    <select className="input" value={editForm.status} onChange={onEditChange('status')}>
+                      <option value="invited">Invited</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </label>
+                  <label>
+                    Role
+                    <select className="input" value={editForm.role_name} onChange={onEditChange('role_name')}>
+                      <option value="">Select role</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.name}>{role.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {editError && <p className="error">{editError}</p>}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button type="button" className="button secondary small" onClick={() => setShowEdit(false)}>
+                      Cancel
+                    </button>
+                    <button className="button small" disabled={editLoading}>
+                      {editLoading ? 'Saving...' : 'Save'}
                     </button>
                   </div>
                 </form>

@@ -57,6 +57,7 @@ class UserUpdateSerializer(serializers.Serializer):
     display_name = serializers.CharField(max_length=255, required=False)
     phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
     status = serializers.ChoiceField(choices=["active", "suspended", "invited"], required=False)
+    role_name = serializers.CharField(max_length=255, required=False)
 
 
 class UserResponseSerializer(serializers.Serializer):
