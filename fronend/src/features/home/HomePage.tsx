@@ -6,7 +6,7 @@ import { apiRequest } from '../../shared/api/client'
 export function HomePage() {
   const { auth, logout } = useAuth()
   const navigate = useNavigate()
-  const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles'>('users')
+  const [activeMenu, setActiveMenu] = useState<'dashboard' | 'users' | 'roles' | 'orgs'>('users')
   const [users, setUsers] = useState<Array<{ id: number; display_name: string; email: string; phone?: string; status: string; roles?: string[] }>>([])
   const [showCreate, setShowCreate] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
@@ -25,6 +25,13 @@ export function HomePage() {
   const [roleTotal, setRoleTotal] = useState(0)
   const [roleSortBy, setRoleSortBy] = useState<'name' | 'created_at'>('name')
   const [roleSortDir, setRoleSortDir] = useState<'asc' | 'desc'>('asc')
+  const [orgList, setOrgList] = useState<Array<{ id: number; name: string; legal_name: string; status: string }>>([])
+  const [orgLoading, setOrgLoading] = useState(false)
+  const [orgError, setOrgError] = useState('')
+  const [showOrgModal, setShowOrgModal] = useState(false)
+  const [orgEditingId, setOrgEditingId] = useState<number | null>(null)
+  const [orgForm, setOrgForm] = useState({ name: '', legal_name: '', status: 'active' })
+  const [orgSaving, setOrgSaving] = useState(false)
   const [createError, setCreateError] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
   const [inviteMessage, setInviteMessage] = useState('')
@@ -109,6 +116,12 @@ export function HomePage() {
       loadRoleList()
     }
   }, [activeMenu, auth?.accessToken, auth?.user?.org_id, rolePage, rolePageSize, roleSearch, roleSortBy, roleSortDir])
+
+  useEffect(() => {
+    if (activeMenu === 'orgs') {
+      loadOrgList()
+    }
+  }, [activeMenu, auth?.accessToken])
 
   useEffect(() => {
     const loadRoles = async () => {
@@ -324,6 +337,90 @@ export function HomePage() {
     }
   }
 
+  const loadOrgList = async () => {
+    if (!auth?.accessToken) return
+    setOrgLoading(true)
+    setOrgError('')
+    try {
+      const data = await apiRequest('/organizations', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      })
+      setOrgList(data || [])
+    } catch (err: any) {
+      setOrgError(err.details?.detail || err.message || 'Failed to load organizations.')
+    } finally {
+      setOrgLoading(false)
+    }
+  }
+
+  const openOrgModal = (org?: { id: number; name: string; legal_name: string; status: string }) => {
+    if (org) {
+      setOrgEditingId(org.id)
+      setOrgForm({ name: org.name, legal_name: org.legal_name, status: org.status })
+    } else {
+      setOrgEditingId(null)
+      setOrgForm({ name: '', legal_name: '', status: 'active' })
+    }
+    setOrgError('')
+    setShowOrgModal(true)
+  }
+
+  const onOrgChange = (key: keyof typeof orgForm) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setOrgForm((prev) => ({ ...prev, [key]: event.target.value }))
+  }
+
+  const onSaveOrg = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!auth?.accessToken) return
+    setOrgSaving(true)
+    setOrgError('')
+    try {
+      if (orgEditingId) {
+        await apiRequest(`/organizations/${orgEditingId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+          body: JSON.stringify({
+            name: orgForm.name.trim(),
+            legal_name: orgForm.legal_name.trim(),
+            status: orgForm.status,
+          }),
+        })
+      } else {
+        await apiRequest('/organizations', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+          body: JSON.stringify({
+            name: orgForm.name.trim(),
+            legal_name: orgForm.legal_name.trim(),
+            status: orgForm.status,
+          }),
+        })
+      }
+      setShowOrgModal(false)
+      await loadOrgList()
+    } catch (err: any) {
+      setOrgError(err.details?.detail || err.message || 'Failed to save organization.')
+    } finally {
+      setOrgSaving(false)
+    }
+  }
+
+  const onDeleteOrg = async (orgId: number) => {
+    if (!auth?.accessToken) return
+    const ok = window.confirm('Delete this organization?')
+    if (!ok) return
+    try {
+      await apiRequest(`/organizations/${orgId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      })
+      await loadOrgList()
+    } catch (err: any) {
+      setOrgError(err.details?.detail || err.message || 'Failed to delete organization.')
+    }
+  }
+
   const onDeleteRole = async (roleId: number) => {
     if (!auth?.accessToken) return
     const ok = window.confirm('Delete this role?')
@@ -418,6 +515,20 @@ export function HomePage() {
               </span>
               <span>Role Management</span>
             </button>
+            {canCreateUser && (
+              <button
+                className={`menu-item ${activeMenu === 'orgs' ? 'active' : ''}`}
+                onClick={() => setActiveMenu('orgs')}
+              >
+                <span className="icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M4 4h16v16H4z" />
+                    <path d="M8 8h8M8 12h8M8 16h8" />
+                  </svg>
+                </span>
+                <span>Organization Management</span>
+              </button>
+            )}
           </nav>
           <button className="logout" onClick={onSignOut}>
             <span className="logout-name">{displayName}</span>
@@ -716,6 +827,55 @@ export function HomePage() {
               )}
             </>
           )}
+          {activeMenu === 'orgs' && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <h2>Organization Management</h2>
+                  <p className="helper">Manage organizations.</p>
+                </div>
+                {canCreateUser && (
+                  <button className="button primary small icon-button" onClick={() => openOrgModal()}>
+                    <span className="icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </span>
+                    Add Organization
+                  </button>
+                )}
+              </div>
+              {orgLoading && <p className="helper">Loading organizations...</p>}
+              {orgError && <p className="error">{orgError}</p>}
+              {!orgLoading && !orgError && (
+                <div className="list">
+                  <div className="list-header">
+                    <span>Name</span>
+                    <span>Legal Name</span>
+                    <span>Status</span>
+                    <span>Actions</span>
+                  </div>
+                  {orgList.map((org) => (
+                    <div key={org.id} className="list-item org-row">
+                      <div className="cell">{org.name}</div>
+                      <div className="cell">{org.legal_name}</div>
+                      <div className="cell">
+                        <span className={`status ${org.status}`}>{org.status}</span>
+                      </div>
+                      <div className="cell actions">
+                        <button className="button secondary small" onClick={() => openOrgModal(org)}>
+                          Edit
+                        </button>
+                        <button className="button secondary small" onClick={() => onDeleteOrg(org.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           {showCreate && (
             <div className="modal-backdrop" onClick={() => setShowCreate(false)}>
               <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -894,6 +1054,49 @@ export function HomePage() {
                     </button>
                     <button className="button small" disabled={roleSaving}>
                       {roleSaving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+          {showOrgModal && (
+            <div className="modal-backdrop" onClick={() => setShowOrgModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3>{orgEditingId ? 'Edit Organization' : 'Add Organization'}</h3>
+                <form onSubmit={onSaveOrg} style={{ display: 'grid', gap: '12px' }}>
+                  <label>
+                    Name
+                    <input
+                      className="input"
+                      value={orgForm.name}
+                      onChange={onOrgChange('name')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Legal Name
+                    <input
+                      className="input"
+                      value={orgForm.legal_name}
+                      onChange={onOrgChange('legal_name')}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Status
+                    <select className="input" value={orgForm.status} onChange={onOrgChange('status')}>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
+                  {orgError && <p className="error">{orgError}</p>}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button type="button" className="button secondary small" onClick={() => setShowOrgModal(false)}>
+                      Cancel
+                    </button>
+                    <button className="button small" disabled={orgSaving}>
+                      {orgSaving ? 'Saving...' : 'Save'}
                     </button>
                   </div>
                 </form>
