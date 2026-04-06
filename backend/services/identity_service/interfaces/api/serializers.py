@@ -91,3 +91,24 @@ class RoleResponseSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+
+class OrganizationCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    legal_name = serializers.CharField(max_length=255)
+    status = serializers.ChoiceField(choices=["active", "inactive"], default="active")
+
+
+class OrganizationUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    legal_name = serializers.CharField(max_length=255, required=False)
+    status = serializers.ChoiceField(choices=["active", "inactive"], required=False)
+
+
+class OrganizationResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255)
+    legal_name = serializers.CharField(max_length=255)
+    status = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()

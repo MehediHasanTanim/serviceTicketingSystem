@@ -38,6 +38,9 @@ from interfaces.api.serializers import (
     RoleCreateSerializer,
     RoleUpdateSerializer,
     RoleResponseSerializer,
+    OrganizationCreateSerializer,
+    OrganizationUpdateSerializer,
+    OrganizationResponseSerializer,
 )
 
 
@@ -635,6 +638,113 @@ class RoleDetailView(APIView):
             role.delete()
         except IntegrityError:
             return Response({"detail": "Role is in use"}, status=status.HTTP_409_CONFLICT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OrganizationListCreateView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    @extend_schema(responses=OrganizationResponseSerializer(many=True))
+    def get(self, request):
+        if not _is_admin(request.user, request.user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        orgs = Organization.objects.all().order_by("id")
+        return Response(
+            [
+                {
+                    "id": org.id,
+                    "name": org.name,
+                    "legal_name": org.legal_name,
+                    "status": org.status,
+                    "created_at": org.created_at,
+                    "updated_at": org.updated_at,
+                }
+                for org in orgs
+            ],
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=OrganizationCreateSerializer, responses=OrganizationResponseSerializer)
+    def post(self, request):
+        if not _is_admin(request.user, request.user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        serializer = OrganizationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        org = Organization.objects.create(
+            name=data["name"],
+            legal_name=data["legal_name"],
+            status=data.get("status", "active"),
+        )
+        return Response(
+            {
+                "id": org.id,
+                "name": org.name,
+                "legal_name": org.legal_name,
+                "status": org.status,
+                "created_at": org.created_at,
+                "updated_at": org.updated_at,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class OrganizationDetailView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    @extend_schema(responses=OrganizationResponseSerializer)
+    def get(self, request, org_id: int):
+        org = Organization.objects.filter(id=org_id).first()
+        if not org:
+            return Response({"detail": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, request.user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {
+                "id": org.id,
+                "name": org.name,
+                "legal_name": org.legal_name,
+                "status": org.status,
+                "created_at": org.created_at,
+                "updated_at": org.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=OrganizationUpdateSerializer, responses=OrganizationResponseSerializer)
+    def patch(self, request, org_id: int):
+        org = Organization.objects.filter(id=org_id).first()
+        if not org:
+            return Response({"detail": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, request.user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        serializer = OrganizationUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        for field in ["name", "legal_name", "status"]:
+            if field in data:
+                setattr(org, field, data[field])
+        org.save()
+        return Response(
+            {
+                "id": org.id,
+                "name": org.name,
+                "legal_name": org.legal_name,
+                "status": org.status,
+                "created_at": org.created_at,
+                "updated_at": org.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=None, responses=None)
+    def delete(self, request, org_id: int):
+        org = Organization.objects.filter(id=org_id).first()
+        if not org:
+            return Response({"detail": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, request.user.org_id):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        org.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
