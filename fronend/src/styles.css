@@ -222,13 +222,65 @@ body {
   margin-top: 20px;
 }
 
+.list-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 1fr 0.6fr 1.2fr;
+  gap: 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8a93a9;
+  padding: 0 8px;
+}
+
+.header-button {
+  background: transparent;
+  border: none;
+  color: #8a93a9;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-indicator {
+  font-size: 0.7rem;
+  color: #4c5bff;
+}
+
+.list-item.role-row {
+  grid-template-columns: 1.2fr 2fr 0.9fr 1fr;
+}
+
 .list-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 1fr 0.6fr 1.2fr;
+  gap: 12px;
   align-items: center;
   padding: 14px 16px;
   border-radius: 16px;
   background: #f7f8ff;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+}
+
+.cell.actions {
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.list-header span:last-child,
+.list-header button:last-child {
+  text-align: left;
 }
 
 .role-tags {
@@ -343,6 +395,28 @@ input, button {
 .button.secondary {
   background: #f2f4ff;
   color: #1d3aff;
+}
+
+.button.primary {
+  background: linear-gradient(135deg, #1d3aff, #5a6bff);
+  color: #ffffff;
+}
+
+.button.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.button.icon-button .icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+}
+
+.button.icon-button .icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .helper {

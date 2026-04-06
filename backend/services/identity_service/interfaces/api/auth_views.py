@@ -1,7 +1,7 @@
 import secrets
 from datetime import timedelta
 
-from django.db import transaction
+from django.db import transaction, models, IntegrityError
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password, make_password
@@ -35,6 +35,9 @@ from interfaces.api.serializers import (
     UserCreateSerializer,
     UserUpdateSerializer,
     UserResponseSerializer,
+    RoleCreateSerializer,
+    RoleUpdateSerializer,
+    RoleResponseSerializer,
 )
 
 
@@ -383,6 +386,9 @@ class UserListCreateView(APIView):
         if User.objects.filter(org_id=data["org_id"], email__iexact=data["email"]).exists():
             return Response({"detail": "User already exists"}, status=status.HTTP_409_CONFLICT)
 
+        if data.get("status") == "active" and not data.get("password"):
+            return Response({"detail": "Password is required for active users"}, status=status.HTTP_400_BAD_REQUEST)
+
         user = User.objects.create(
             org_id=data["org_id"],
             email=data["email"],
@@ -390,6 +396,14 @@ class UserListCreateView(APIView):
             phone=data.get("phone", ""),
             status=data.get("status", "invited"),
         )
+        if data.get("password"):
+            UserCredential.objects.update_or_create(
+                user=user,
+                defaults={
+                    "password_hash": make_password(data["password"]),
+                    "last_password_change_at": timezone.now(),
+                },
+            )
         role_name = data.get("role_name")
         if role_name:
             role = Role.objects.filter(org_id=data["org_id"], name__iexact=role_name).first()
@@ -427,10 +441,24 @@ class UserListCreateView(APIView):
             return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not _require_admin(request.user, int(org_id)):
             return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
-        qs = User.objects.all()
-        qs = qs.filter(org_id=org_id)
+        qs = User.objects.filter(org_id=org_id)
+        query = request.query_params.get("q")
+        if query:
+            qs = qs.filter(models.Q(email__icontains=query) | models.Q(display_name__icontains=query))
+
+        sort_by = request.query_params.get("sort_by", "id")
+        sort_dir = request.query_params.get("sort_dir", "asc")
+        allowed_sorts = {"id", "display_name", "email", "status", "created_at"}
+        if sort_by not in allowed_sorts:
+            sort_by = "id"
+        prefix = "-" if sort_dir == "desc" else ""
+
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), 100)
+        total = qs.count()
+        offset = (page - 1) * page_size
         users = []
-        for user in qs.order_by("id"):
+        for user in qs.order_by(f"{prefix}{sort_by}")[offset:offset + page_size]:
             roles = list(
                 UserRole.objects.filter(user=user)
                 .select_related("role")
@@ -449,12 +477,21 @@ class UserListCreateView(APIView):
                     "updated_at": user.updated_at,
                 }
             )
-        return Response(users, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "results": users,
+                "count": total,
+                "page": page,
+                "page_size": page_size,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class RoleListView(APIView):
     authentication_classes = [BearerTokenAuthentication]
 
+    @extend_schema(responses=RoleResponseSerializer(many=True))
     def get(self, request):
         org_id = request.query_params.get("org_id")
         if not org_id:
@@ -462,8 +499,143 @@ class RoleListView(APIView):
         if not _is_admin(request.user, int(org_id)):
             return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
 
-        roles = list(Role.objects.filter(org_id=org_id).values("id", "name"))
-        return Response(roles, status=status.HTTP_200_OK)
+        roles = Role.objects.filter(org_id=org_id)
+        query = request.query_params.get("q")
+        if query:
+            roles = roles.filter(models.Q(name__icontains=query) | models.Q(description__icontains=query))
+
+        sort_by = request.query_params.get("sort_by", "id")
+        sort_dir = request.query_params.get("sort_dir", "asc")
+        allowed_sorts = {"id", "name", "created_at"}
+        if sort_by not in allowed_sorts:
+            sort_by = "id"
+        prefix = "-" if sort_dir == "desc" else ""
+
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), 100)
+        total = roles.count()
+        offset = (page - 1) * page_size
+        roles = roles.order_by(f"{prefix}{sort_by}")[offset:offset + page_size]
+
+        return Response(
+            {
+                "results": [
+                    {
+                        "id": role.id,
+                        "org_id": role.org_id,
+                        "name": role.name,
+                        "description": role.description,
+                        "created_at": role.created_at,
+                        "updated_at": role.updated_at,
+                    }
+                    for role in roles
+                ],
+                "count": total,
+                "page": page,
+                "page_size": page_size,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=RoleCreateSerializer, responses=RoleResponseSerializer)
+    def post(self, request):
+        serializer = RoleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if not _is_admin(request.user, int(data["org_id"])):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            role = Role.objects.create(
+                org_id=data["org_id"],
+                name=data["name"],
+                description=data.get("description", ""),
+            )
+        except IntegrityError:
+            return Response({"detail": "Role already exists"}, status=status.HTTP_409_CONFLICT)
+
+        return Response(
+            {
+                "id": role.id,
+                "org_id": role.org_id,
+                "name": role.name,
+                "description": role.description,
+                "created_at": role.created_at,
+                "updated_at": role.updated_at,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(responses=RoleResponseSerializer)
+class RoleDetailView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+
+    def get(self, request, role_id: int):
+        role = Role.objects.filter(id=role_id).first()
+        if not role:
+            return Response({"detail": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, int(role.org_id)):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {
+                "id": role.id,
+                "org_id": role.org_id,
+                "name": role.name,
+                "description": role.description,
+                "created_at": role.created_at,
+                "updated_at": role.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=RoleUpdateSerializer, responses=RoleResponseSerializer)
+    def patch(self, request, role_id: int):
+        role = Role.objects.filter(id=role_id).first()
+        if not role:
+            return Response({"detail": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, int(role.org_id)):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = RoleUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if "name" in data:
+            role.name = data["name"]
+        if "description" in data:
+            role.description = data["description"]
+
+        try:
+            role.save()
+        except IntegrityError:
+            return Response({"detail": "Role already exists"}, status=status.HTTP_409_CONFLICT)
+
+        return Response(
+            {
+                "id": role.id,
+                "org_id": role.org_id,
+                "name": role.name,
+                "description": role.description,
+                "created_at": role.created_at,
+                "updated_at": role.updated_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=None, responses=None)
+    def delete(self, request, role_id: int):
+        role = Role.objects.filter(id=role_id).first()
+        if not role:
+            return Response({"detail": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not _is_admin(request.user, int(role.org_id)):
+            return Response({"detail": "Admin role required"}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            role.delete()
+        except IntegrityError:
+            return Response({"detail": "Role is in use"}, status=status.HTTP_409_CONFLICT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(responses=UserResponseSerializer)

@@ -50,6 +50,7 @@ class UserCreateSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
     status = serializers.ChoiceField(choices=["active", "suspended", "invited"], default="invited")
     role_name = serializers.CharField(max_length=255, required=False)
+    password = serializers.CharField(min_length=8, required=False, write_only=True)
 
 
 class UserUpdateSerializer(serializers.Serializer):
@@ -68,5 +69,25 @@ class UserResponseSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=32, allow_blank=True)
     status = serializers.CharField()
     roles = serializers.ListField(child=serializers.CharField(), required=False)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class RoleCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+
+
+class RoleUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+
+
+class RoleResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
