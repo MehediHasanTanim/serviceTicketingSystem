@@ -563,6 +563,227 @@ class PMSSyncLog(models.Model):
         ]
 
 
+class Asset(TimestampedModel):
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_INACTIVE = "INACTIVE"
+    STATUS_UNDER_MAINTENANCE = "UNDER_MAINTENANCE"
+    STATUS_OUT_OF_SERVICE = "OUT_OF_SERVICE"
+    STATUS_RETIRED = "RETIRED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_UNDER_MAINTENANCE, "Under Maintenance"),
+        (STATUS_OUT_OF_SERVICE, "Out Of Service"),
+        (STATUS_RETIRED, "Retired"),
+    ]
+
+    CRITICALITY_LOW = "LOW"
+    CRITICALITY_MEDIUM = "MEDIUM"
+    CRITICALITY_HIGH = "HIGH"
+    CRITICALITY_CRITICAL = "CRITICAL"
+    CRITICALITY_CHOICES = [
+        (CRITICALITY_LOW, "Low"),
+        (CRITICALITY_MEDIUM, "Medium"),
+        (CRITICALITY_HIGH, "High"),
+        (CRITICALITY_CRITICAL, "Critical"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="assets")
+    asset_code = models.CharField(max_length=64, unique=True)
+    qr_code = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    location_id = models.BigIntegerField(null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="assets", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="assets", null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="assets", null=True, blank=True)
+    manufacturer = models.CharField(max_length=255, blank=True)
+    model_number = models.CharField(max_length=255, blank=True)
+    serial_number = models.CharField(max_length=255, blank=True)
+    purchase_date = models.DateField(null=True, blank=True)
+    warranty_expiry_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    criticality = models.CharField(max_length=16, choices=CRITICALITY_CHOICES, default=CRITICALITY_MEDIUM)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_assets")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_assets")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="asset_org_status_idx"),
+            models.Index(fields=["org", "category"], name="asset_org_category_idx"),
+            models.Index(fields=["org", "property"], name="asset_org_property_idx"),
+            models.Index(fields=["org", "room"], name="asset_org_room_idx"),
+            models.Index(fields=["org", "department"], name="asset_org_dept_idx"),
+            models.Index(fields=["org", "criticality"], name="asset_org_criticality_idx"),
+        ]
+
+
+class AssetLifecycleHistory(models.Model):
+    asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name="lifecycle_history")
+    previous_status = models.CharField(max_length=32, choices=Asset.STATUS_CHOICES)
+    new_status = models.CharField(max_length=32, choices=Asset.STATUS_CHOICES)
+    changed_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="asset_status_changes")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["asset", "changed_at"], name="asset_lifecycle_hist_idx"),
+        ]
+
+
+class MaintenanceTask(TimestampedModel):
+    TYPE_CORRECTIVE = "CORRECTIVE"
+    TYPE_PREVENTIVE = "PREVENTIVE"
+    TYPE_CHOICES = [
+        (TYPE_CORRECTIVE, "Corrective"),
+        (TYPE_PREVENTIVE, "Preventive"),
+    ]
+
+    PRIORITY_LOW = "LOW"
+    PRIORITY_MEDIUM = "MEDIUM"
+    PRIORITY_HIGH = "HIGH"
+    PRIORITY_URGENT = "URGENT"
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW, "Low"),
+        (PRIORITY_MEDIUM, "Medium"),
+        (PRIORITY_HIGH, "High"),
+        (PRIORITY_URGENT, "Urgent"),
+    ]
+
+    STATUS_OPEN = "OPEN"
+    STATUS_ASSIGNED = "ASSIGNED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_ON_HOLD = "ON_HOLD"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_ASSIGNED, "Assigned"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_ON_HOLD, "On Hold"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="maintenance_tasks")
+    task_number = models.CharField(max_length=64, unique=True)
+    task_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    asset = models.ForeignKey(Asset, on_delete=models.PROTECT, related_name="maintenance_tasks", null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="maintenance_tasks", null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="maintenance_tasks", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="maintenance_tasks", null=True, blank=True)
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="assigned_maintenance_tasks", null=True, blank=True)
+    reported_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="reported_maintenance_tasks")
+    pm_schedule = models.ForeignKey("PMSchedule", on_delete=models.SET_NULL, related_name="generated_tasks", null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    parts_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    labor_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "task_type"], name="maint_task_org_type_idx"),
+            models.Index(fields=["org", "status"], name="maint_task_org_status_idx"),
+            models.Index(fields=["org", "priority"], name="maint_task_org_priority_idx"),
+            models.Index(fields=["org", "assigned_to"], name="maint_task_org_assignee_idx"),
+            models.Index(fields=["asset", "status"], name="maint_task_asset_status_idx"),
+        ]
+
+
+class PMSchedule(TimestampedModel):
+    FREQ_DAILY = "DAILY"
+    FREQ_WEEKLY = "WEEKLY"
+    FREQ_MONTHLY = "MONTHLY"
+    FREQ_QUARTERLY = "QUARTERLY"
+    FREQ_YEARLY = "YEARLY"
+    FREQ_CUSTOM = "CUSTOM"
+    FREQUENCY_CHOICES = [
+        (FREQ_DAILY, "Daily"),
+        (FREQ_WEEKLY, "Weekly"),
+        (FREQ_MONTHLY, "Monthly"),
+        (FREQ_QUARTERLY, "Quarterly"),
+        (FREQ_YEARLY, "Yearly"),
+        (FREQ_CUSTOM, "Custom"),
+    ]
+
+    asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name="pm_schedules")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    frequency_type = models.CharField(max_length=16, choices=FREQUENCY_CHOICES)
+    frequency_interval = models.PositiveIntegerField(default=1)
+    next_run_at = models.DateTimeField()
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    priority = models.CharField(max_length=16, choices=MaintenanceTask.PRIORITY_CHOICES, default=MaintenanceTask.PRIORITY_MEDIUM)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_pm_schedules")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["is_active", "next_run_at"], name="pm_sched_active_next_idx"),
+            models.Index(fields=["asset", "is_active"], name="pm_sched_asset_active_idx"),
+        ]
+
+
+class MaintenanceLogbookEntry(models.Model):
+    TYPE_DIAGNOSIS = "DIAGNOSIS"
+    TYPE_WORK_PERFORMED = "WORK_PERFORMED"
+    TYPE_PART_USED = "PART_USED"
+    TYPE_LABOR = "LABOR"
+    TYPE_NOTE = "NOTE"
+    TYPE_COMPLETION_SUMMARY = "COMPLETION_SUMMARY"
+    ENTRY_TYPE_CHOICES = [
+        (TYPE_DIAGNOSIS, "Diagnosis"),
+        (TYPE_WORK_PERFORMED, "Work Performed"),
+        (TYPE_PART_USED, "Part Used"),
+        (TYPE_LABOR, "Labor"),
+        (TYPE_NOTE, "Note"),
+        (TYPE_COMPLETION_SUMMARY, "Completion Summary"),
+    ]
+
+    maintenance_task = models.ForeignKey(MaintenanceTask, on_delete=models.CASCADE, related_name="logbook_entries")
+    asset = models.ForeignKey(Asset, on_delete=models.PROTECT, related_name="logbook_entries", null=True, blank=True)
+    entry_type = models.CharField(max_length=32, choices=ENTRY_TYPE_CHOICES)
+    description = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="maintenance_logbook_entries")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["maintenance_task", "created_at"], name="maint_logbook_task_created_idx"),
+        ]
+
+
+class MaintenancePartEntry(models.Model):
+    logbook_entry = models.ForeignKey(MaintenanceLogbookEntry, on_delete=models.CASCADE, related_name="parts_entries")
+    part_name = models.CharField(max_length=255)
+    part_number = models.CharField(max_length=255, blank=True)
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
+    total_cost = models.DecimalField(max_digits=12, decimal_places=2)
+
+
+class MaintenanceLaborEntry(models.Model):
+    logbook_entry = models.ForeignKey(MaintenanceLogbookEntry, on_delete=models.CASCADE, related_name="labor_entries")
+    technician_id = models.BigIntegerField()
+    hours = models.DecimalField(max_digits=12, decimal_places=2)
+    hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    total_labor_cost = models.DecimalField(max_digits=12, decimal_places=2)
+
+
 class PasswordResetToken(models.Model):
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")

@@ -1,6 +1,7 @@
 from django.urls import path
 from interfaces.api import auth_views
 from interfaces.api import housekeeping_views
+from interfaces.api import maintenance_views
 from interfaces.api import service_order_views
 
 urlpatterns = [
@@ -65,4 +66,23 @@ urlpatterns = [
     path("pms/room-status/sync", housekeeping_views.PMSRoomStatusSyncView.as_view(), name="pms-room-status-sync"),
     path("pms/room-status", housekeeping_views.PMSRoomStatusPullView.as_view(), name="pms-room-status-pull"),
     path("pms/housekeeping-tasks/sync", housekeeping_views.PMSTaskSyncView.as_view(), name="pms-housekeeping-task-sync"),
+    path("maintenance/assets", maintenance_views.AssetListCreateView.as_view(), name="maintenance-asset-list-create"),
+    path("maintenance/assets/<int:asset_id>", maintenance_views.AssetDetailView.as_view(), name="maintenance-asset-detail"),
+    path("maintenance/assets/<int:asset_id>/status", maintenance_views.AssetStatusUpdateView.as_view(), name="maintenance-asset-status"),
+    path("maintenance/assets/<int:asset_id>/history", maintenance_views.AssetHistoryView.as_view(), name="maintenance-asset-history"),
+    path("maintenance/assets/qr/<str:qr_code>", maintenance_views.QRAssetLookupView.as_view(), name="maintenance-asset-qr-lookup"),
+    path("maintenance/assets/qr/<str:qr_code>/tasks", maintenance_views.QRTaskCreateView.as_view(), name="maintenance-asset-qr-task-create"),
+    path("maintenance/tasks", maintenance_views.MaintenanceTaskListCreateView.as_view(), name="maintenance-task-list-create"),
+    path("maintenance/tasks/<int:task_id>", maintenance_views.MaintenanceTaskDetailView.as_view(), name="maintenance-task-detail"),
+    path("maintenance/tasks/<int:task_id>/assign", maintenance_views.MaintenanceTaskAssignView.as_view(), name="maintenance-task-assign"),
+    path("maintenance/tasks/<int:task_id>/start", maintenance_views.MaintenanceTaskStartView.as_view(), name="maintenance-task-start"),
+    path("maintenance/tasks/<int:task_id>/hold", maintenance_views.MaintenanceTaskHoldView.as_view(), name="maintenance-task-hold"),
+    path("maintenance/tasks/<int:task_id>/complete", maintenance_views.MaintenanceTaskCompleteView.as_view(), name="maintenance-task-complete"),
+    path("maintenance/tasks/<int:task_id>/cancel", maintenance_views.MaintenanceTaskCancelView.as_view(), name="maintenance-task-cancel"),
+    path("maintenance/tasks/<int:task_id>/void", maintenance_views.MaintenanceTaskVoidView.as_view(), name="maintenance-task-void"),
+    path("maintenance/tasks/<int:task_id>/logbook", maintenance_views.MaintenanceTaskLogbookView.as_view(), name="maintenance-task-logbook"),
+    path("maintenance/tasks/<int:task_id>/costs", maintenance_views.MaintenanceTaskCostsView.as_view(), name="maintenance-task-costs"),
+    path("maintenance/pm-schedules", maintenance_views.PMScheduleListCreateView.as_view(), name="maintenance-pm-schedule-list-create"),
+    path("maintenance/pm-schedules/<int:schedule_id>", maintenance_views.PMScheduleDetailView.as_view(), name="maintenance-pm-schedule-detail"),
+    path("maintenance/pm-scheduler/run", maintenance_views.PMSchedulerRunView.as_view(), name="maintenance-pm-scheduler-run"),
 ]

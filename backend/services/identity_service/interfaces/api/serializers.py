@@ -338,6 +338,138 @@ class PMSRoomStatusSyncSerializer(serializers.Serializer):
     external_reference_id = serializers.CharField(max_length=255)
     room_id = serializers.IntegerField()
     occupancy_status = serializers.ChoiceField(choices=["OCCUPIED", "VACANT", "RESERVED", "OUT_OF_ORDER"])
+
+
+class AssetCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    asset_code = serializers.CharField(max_length=64, required=False)
+    qr_code = serializers.CharField(max_length=255, required=False, allow_blank=False, allow_null=True)
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    manufacturer = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    model_number = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    serial_number = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    purchase_date = serializers.DateField(required=False, allow_null=True)
+    warranty_expiry_date = serializers.DateField(required=False, allow_null=True)
+    status = serializers.ChoiceField(
+        choices=["ACTIVE", "INACTIVE", "UNDER_MAINTENANCE", "OUT_OF_SERVICE", "RETIRED"],
+        required=False,
+        default="ACTIVE",
+    )
+    criticality = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False, default="MEDIUM")
+
+
+class AssetUpdateSerializer(serializers.Serializer):
+    qr_code = serializers.CharField(max_length=255, required=False, allow_null=True)
+    name = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    manufacturer = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    model_number = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    serial_number = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    purchase_date = serializers.DateField(required=False, allow_null=True)
+    warranty_expiry_date = serializers.DateField(required=False, allow_null=True)
+    criticality = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False)
+
+
+class AssetStatusUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    new_status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "UNDER_MAINTENANCE", "OUT_OF_SERVICE", "RETIRED"])
+    reason = serializers.CharField(required=False, allow_blank=True)
+    metadata = serializers.JSONField(required=False)
+
+
+class MaintenanceTaskCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    task_type = serializers.ChoiceField(choices=["CORRECTIVE", "PREVENTIVE"], default="CORRECTIVE")
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], default="MEDIUM")
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    scheduled_at = serializers.DateTimeField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class MaintenanceTaskUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False)
+    scheduled_at = serializers.DateTimeField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class MaintenanceTaskAssignSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    assignee_id = serializers.IntegerField()
+
+
+class MaintenanceTaskTransitionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+
+
+class MaintenanceTaskLogbookCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    entry_type = serializers.ChoiceField(
+        choices=["DIAGNOSIS", "WORK_PERFORMED", "PART_USED", "LABOR", "NOTE", "COMPLETION_SUMMARY"]
+    )
+    description = serializers.CharField()
+    parts = serializers.ListField(child=serializers.DictField(), required=False)
+    labor = serializers.ListField(child=serializers.DictField(), required=False)
+
+
+class MaintenanceTaskCostsPatchSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+
+
+class PMScheduleCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    asset_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"])
+    frequency_interval = serializers.IntegerField(required=False, min_value=1, default=1)
+    next_run_at = serializers.DateTimeField()
+    start_date = serializers.DateField()
+    end_date = serializers.DateField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False, default="MEDIUM")
+    is_active = serializers.BooleanField(required=False, default=True)
+
+
+class PMScheduleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"], required=False)
+    frequency_interval = serializers.IntegerField(required=False, min_value=1)
+    next_run_at = serializers.DateTimeField(required=False)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False)
+    is_active = serializers.BooleanField(required=False)
+
+
+class QRTaskCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    task_type = serializers.ChoiceField(choices=["CORRECTIVE"], default="CORRECTIVE")
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False, default="MEDIUM")
     housekeeping_status = serializers.ChoiceField(choices=["CLEAN", "DIRTY", "INSPECTING", "READY", "BLOCKED"])
     timestamp = serializers.DateTimeField()
 
