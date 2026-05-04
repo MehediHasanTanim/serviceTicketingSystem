@@ -37,8 +37,18 @@ Postgres is included via Docker in both dev and prod paths.
 Run the admin creation script:
 - `docker compose run --rm identity_service python scripts/create_admin.py`
 
+Optional CLI flags:
+- `--org-id` (use existing org)
+- `--org-name`
+- `--email`
+- `--display-name`
+- `--password`
+- `--role` (e.g. `admin` or `super admin`)
+
 Override defaults using env vars:
+- `ADMIN_ORG_ID`
 - `ADMIN_ORG_NAME`
 - `ADMIN_EMAIL`
 - `ADMIN_DISPLAY_NAME`
 - `ADMIN_PASSWORD`
+- `ADMIN_ROLE`

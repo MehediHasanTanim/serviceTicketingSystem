@@ -17,6 +17,7 @@ type AuthState = {
     roles?: string[]
     is_admin?: boolean
     is_super_admin?: boolean
+    permissions?: string[]
   }
 }
 
@@ -76,13 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await apiRequest('/me', {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${data.token}`,
+          Authorization: `Bearer ${data.access}`,
         },
       })
       const next = {
-        accessToken: data.token,
-        refreshToken: data.refresh_token,
-        expiresAt: data.expires_at,
+        accessToken: data.access,
+        refreshToken: data.refresh,
+        expiresAt: data.access_expires_at,
         refreshExpiresAt: data.refresh_expires_at,
         userName: me.display_name,
         user: me,

@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -32,29 +33,46 @@ DEFAULT_ROLES = [
 
 
 def main():
-    org_name = os.environ.get("ADMIN_ORG_NAME", "Default Organization")
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@local")
-    admin_display_name = os.environ.get("ADMIN_DISPLAY_NAME", "Admin")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "Sansons1$")
+    parser = argparse.ArgumentParser(description="Create an admin/super admin user.")
+    parser.add_argument("--org-id", type=int, default=os.environ.get("ADMIN_ORG_ID"))
+    parser.add_argument("--org-name", default=os.environ.get("ADMIN_ORG_NAME", "Default Organization"))
+    parser.add_argument("--email", default=os.environ.get("ADMIN_EMAIL", "admin@local"))
+    parser.add_argument("--display-name", default=os.environ.get("ADMIN_DISPLAY_NAME", "Admin"))
+    parser.add_argument("--password", default=os.environ.get("ADMIN_PASSWORD", "Sansons1$"))
+    parser.add_argument("--role", default=os.environ.get("ADMIN_ROLE", "admin"))
+    args = parser.parse_args()
 
-    org, _ = Organization.objects.get_or_create(
-        name=org_name,
-        defaults={
-            "legal_name": org_name,
-            "status": "active",
-        },
-    )
+    org_id = int(args.org_id) if args.org_id else None
+    org_name = args.org_name
+    admin_email = args.email
+    admin_display_name = args.display_name
+    admin_password = args.password
+    role_name = args.role.strip()
 
-    for role_name, description in DEFAULT_ROLES:
+    if org_id:
+        org = Organization.objects.filter(id=org_id).first()
+        if not org:
+            print(f"Organization id {org_id} not found")
+            sys.exit(1)
+    else:
+        org, _ = Organization.objects.get_or_create(
+            name=org_name,
+            defaults={
+                "legal_name": org_name,
+                "status": "active",
+            },
+        )
+
+    for default_role_name, description in DEFAULT_ROLES:
         Role.objects.get_or_create(
             org=org,
-            name=role_name,
+            name=default_role_name,
             defaults={"description": description},
         )
 
-    role = Role.objects.filter(org=org, name__iexact="admin").first()
+    role = Role.objects.filter(org=org, name__iexact=role_name).first()
     if not role:
-        role = Role.objects.create(org=org, name="admin", description="System administrator")
+        role = Role.objects.create(org=org, name=role_name, description=f"{role_name} role")
 
     user, created = User.objects.get_or_create(
         org=org,
@@ -73,7 +91,7 @@ def main():
     UserRole.objects.get_or_create(user=user, role=role)
 
     print("Admin user ready")
-    print(f"org={org.id} email={user.email} role=admin created={created}")
+    print(f"org={org.id} email={user.email} role={role.name} created={created}")
 
 
 if __name__ == "__main__":

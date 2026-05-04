@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './authContext'
+import { type ApiError } from '../../shared/api/client'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -29,7 +30,8 @@ export function LoginPage() {
       })
       navigate('/home')
     } catch (err) {
-      setError(err.details?.detail || err.message)
+      const apiError = err as ApiError
+      setError(apiError.details?.detail || apiError.message)
     } finally {
       setLoading(false)
     }

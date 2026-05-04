@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +30,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "interfaces.api.middleware.AuditRequestMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -74,12 +76,22 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Identity Service API",
     "DESCRIPTION": "OpenAPI 3 schema for the Identity Service",
     "VERSION": "v1",
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
 }
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
@@ -98,3 +110,4 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", os.environ.get("SMTP
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", os.environ.get("SMTP_USE_TLS", "1")).lower() in ("1", "true", "yes")
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", os.environ.get("SMTP_USE_SSL", "0")).lower() in ("1", "true", "yes")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", os.environ.get("SMTP_FROM_EMAIL", "no-reply@localhost"))
+PMS_SYNC_API_KEY = os.environ.get("PMS_SYNC_API_KEY", "dev-pms-sync-key")

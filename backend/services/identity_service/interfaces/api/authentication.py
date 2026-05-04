@@ -1,24 +1,16 @@
-from datetime import datetime, timezone
-from rest_framework import authentication, exceptions
-from infrastructure.db.core.models import AuthToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.settings import api_settings
+
+from infrastructure.db.core.models import User
 
 
-class BearerTokenAuthentication(authentication.BaseAuthentication):
-    keyword = "Bearer"
-
-    def authenticate(self, request):
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith(self.keyword + " "):
-            return None
-
-        token_key = auth_header[len(self.keyword) + 1 :].strip()
-        if not token_key:
-            return None
-
-        now = datetime.now(timezone.utc)
-        try:
-            token = AuthToken.objects.select_related("user").get(key=token_key, expires_at__gt=now)
-        except AuthToken.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Invalid or expired token")
-
-        return (token.user, token)
+class BearerTokenAuthentication(JWTAuthentication):
+    def get_user(self, validated_token):
+        user_id = validated_token.get(api_settings.USER_ID_CLAIM)
+        if not user_id:
+            raise AuthenticationFailed("Invalid token")
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            raise AuthenticationFailed("User not found")
+        return user

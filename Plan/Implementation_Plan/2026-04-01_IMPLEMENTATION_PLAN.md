@@ -6,400 +6,309 @@ A comprehensive hotel operations management platform (TicketingSystem) with modu
 ---
 
 ## Phase 1: Foundation & Core Infrastructure (Week 1-2)
-**Objective:** Establish the foundational architecture and core systems
+**Objective:** Establish foundational architecture, identity, and shared platform services.
 
-### Tasks
-- [ ] Project setup and repository initialization
-  - Git repository with branching strategy
-  - CI/CD pipeline configuration
-  - Project documentation structure
+### Feature: Project Setup & Delivery Pipeline
+#### Backend Tasks
+- [ ] Initialize backend workspace structure and module boundaries
+- [ ] Configure backend CI pipeline (build, lint, test)
+- [ ] Add backend environment/config loading and validation
+- [ ] Add backend unit tests for config loading, bootstrap wiring, and CI test execution
 
-- [ ] Database schema design
-  - Entity-Relationship Diagram (ERD)
-  - Core tables: users, roles, permissions, departments
-  - Hotel/property structure tables
-  - Audit and tracking tables
+#### Frontend Tasks
+- [ ] Initialize frontend workspace structure and module boundaries
+- [ ] Configure frontend CI pipeline (build, lint, test)
+- [ ] Add frontend environment/config loading and validation
+- [ ] Add frontend unit tests for app bootstrap, config guards, and CI test execution
 
-- [ ] Authentication & Authorization
-  - User authentication system
-  - JWT token implementation
-  - Role-Based Access Control (RBAC) framework
-  - Permission matrix
+### Feature: Identity & Access (RBAC)
+#### Backend Tasks
+- [ ] Implement auth APIs (login, refresh, logout)
+- [ ] Implement JWT issuance/validation middleware
+- [ ] Implement RBAC entities (users, roles, permissions, assignments)
+- [ ] Implement permission matrix evaluation in API guards
+- [ ] Add backend unit tests for auth service, JWT middleware, RBAC guards, and permission checks
 
-- [ ] Core API infrastructure
-  - RESTful API foundation
-  - Input validation framework
-  - Error handling and standardized responses
-  - API documentation (OpenAPI/Swagger)
+#### Frontend Tasks
+- [ ] Implement login/logout flows and session handling
+- [ ] Implement route guards by role/permission
+- [ ] Implement user/role management screens for admins
+- [ ] Add frontend unit tests for auth state, guard logic, and role-assignment UI behavior
 
-- [ ] Logging, monitoring, and configuration
-  - Centralized logging system
-  - Monitoring dashboard
-  - Configuration management
-  - Environment variables setup
+### Feature: Core API & Data Foundation
+#### Backend Tasks
+- [ ] Design and implement core database schema (users, orgs, properties, departments, audit)
+- [ ] Add migration and seed strategy
+- [ ] Implement API validation, standardized errors, and response envelope
+- [ ] Implement centralized logging and request tracing
+- [ ] Add backend unit tests for validation rules, error mappers, and audit log writers
 
-**Deliverables:** Docker setup, database migrations, auth APIs, API documentation
+#### Frontend Tasks
+- [ ] Implement shared API client (auth headers, retries, error mapping)
+- [ ] Implement shared UI states (loading, error, empty)
+- [ ] Implement core admin screens for organization/property/department setup
+- [ ] Add frontend unit tests for API client wrappers, error rendering, and admin setup forms
+
+**Deliverables:** Docker setup, migrations, auth/RBAC APIs, core frontend shell, baseline unit-test suites
 
 ---
 
 ## Phase 2: Service Orders / Ticketing Core (Week 3-4)
-**Objective:** Implement the foundational ticketing system
+**Objective:** Implement service order lifecycle, assignment, and tracking.
 
-### Tasks
-- [ ] Service order data model
-  - Service order entity with all required fields
-  - Ticket types: standard, PM, inspections, incidents, rounds, delivery, transportation
-  - Priority levels (Low, Medium, High, Critical)
-  - Status definitions: start, stop, complete, defer, void
+### Feature: Service Order Management
+#### Backend Tasks
+- [ ] Implement service order entity/model with priorities, types, and lifecycle statuses
+- [ ] Implement CRUD APIs with filtering and pagination
+- [ ] Implement lifecycle transition rules (start/stop/complete/defer/void)
+- [ ] Implement assignment and reassignment history
+- [ ] Implement attachment/remark persistence and cost tracking (parts/labor/compensation)
+- [ ] Add backend unit tests for lifecycle rules, assignment logic, cost calculation, and repository/service methods
 
-- [ ] Service order CRUD operations
-  - Create service orders
-  - Read/retrieve orders with filtering
-  - Update order details
-  - Delete/archive orders
+#### Frontend Tasks
+- [ ] Build service order list and detailed order views
+- [ ] Build create/edit order forms including types/priorities/status updates
+- [ ] Build assignment/reassignment UI and timeline/history view
+- [ ] Build attachment, remark, and cost-entry UI
+- [ ] Add frontend unit tests for order forms, status transition UI constraints, list filtering, and assignment interactions
 
-- [ ] Order lifecycle management
-  - Status transition rules and validations
-  - Workflow state machine
-  - Event logging for status changes
-
-- [ ] Order assignment and tracking
-  - User assignment to orders
-  - Assignment history
-  - Workload balancing logic
-
-- [ ] Attachments and remarks
-  - File upload/storage
-  - Attachment associations
-  - Remarks/comments system
-
-- [ ] Cost tracking system
-  - Parts cost tracking
-  - Labor cost tracking
-  - Guest compensation/recovery tracking
-
-**Deliverables:** Service order APIs, database tables, assignment logic, cost tracking backend
+**Deliverables:** Ticketing APIs, order management UI, attachments/cost tracking, unit tests for backend and frontend
 
 ---
 
 ## Phase 3: Housekeeping Module (Week 5-6)
-**Objective:** Implement housekeeping task management and room status
+**Objective:** Implement housekeeping operations and room-status workflows.
 
-### Tasks
-- [ ] Room status management
-  - Room status types (clean, dirty, occupied, maintenance, blocked)
-  - Real-time status tracking
-  - Status history and audits
+### Feature: Housekeeping Operations
+#### Backend Tasks
+- [ ] Implement room status model and status-history tracking
+- [ ] Implement occupancy/priority-based housekeeping task generation
+- [ ] Implement housekeeping task assignment/distribution logic
+- [ ] Implement housekeeping KPI aggregation endpoints
+- [ ] Implement PMS-ready room occupancy/status sync contracts
+- [ ] Add backend unit tests for task generation rules, assignment algorithm, and KPI aggregation services
 
-- [ ] Automated task assignment
-  - Occupancy-based task generation
-  - Priority-based task assignment to housekeeping staff
-  - Task distribution algorithms
+#### Frontend Tasks
+- [ ] Build housekeeping daily task board and room assignment views
+- [ ] Build room status update workflow (clean/dirty/occupied/blocked/maintenance)
+- [ ] Build task completion and supervisor verification flow
+- [ ] Build housekeeping KPI dashboard views
+- [ ] Add frontend unit tests for task board behavior, room status transitions, and KPI component rendering
 
-- [ ] Housekeeping workflow
-  - Daily task lists
-  - In-progress task tracking
-  - Task completion confirmation
-  - Inspection points within workflow
-
-- [ ] Housekeeping performance analytics
-  - KPI definitions (room cleanliness, turnaround time, efficiency)
-  - Daily/weekly performance reports
-  - Staff performance comparison
-
-- [ ] PMS integration preparation
-  - Data structure for PMS sync
-  - Room occupancy data handling
-  - Check-in/check-out event handling
-
-**Deliverables:** Housekeeping APIs, task assignment system, performance tracking, PMS event handlers
+**Deliverables:** Housekeeping APIs, task/room-status UI, KPI views, backend/frontend unit tests
 
 ---
 
 ## Phase 4: Mobile & Offline Support (Week 7-8)
-**Objective:** Enable mobile-first operations with offline capabilities
+**Objective:** Deliver mobile-first offline-capable workflows for operations teams.
 
-### Tasks
-- [ ] Mobile app foundation (React Native / Flutter)
-  - Project setup and configuration
-  - Navigation structure
-  - UI component library
+### Feature: Mobile Foundation & Offline Sync
+#### Backend Tasks
+- [ ] Implement sync APIs for delta fetch, outbound queue processing, and conflict metadata
+- [ ] Implement push-notification event publishers for task/order updates
+- [ ] Implement token refresh/session policies for mobile clients
+- [ ] Add backend unit tests for sync conflict resolution service, delta generation, and notification payload builders
 
-- [ ] Offline data synchronization
-  - Local database (SQLite/Realm)
-  - Sync queue mechanism
-  - Conflict resolution strategy
-  - Background sync service
+#### Frontend Tasks
+- [ ] Build mobile app shell/navigation and shared design components
+- [ ] Implement local offline store and outbound sync queue
+- [ ] Implement conflict handling UI and manual retry flows
+- [ ] Implement mobile auth/session and push-notification handlers
+- [ ] Add frontend unit tests for offline store reducers, sync queue logic, and mobile auth state transitions
 
-- [ ] Mobile authentication
-  - Login/logout workflows
-  - Biometric support
-  - Session management
-  - Token refresh mechanism
-
-- [ ] Offline-capable modules
-  - Housekeeping task workflow
-  - Service order updates
-  - Data caching strategies
-
-- [ ] Push notifications
-  - Notification service setup
-  - Real-time updates
-  - User preferences for notifications
-
-**Deliverables:** Mobile app shell, offline sync framework, push notification system, mobile auth
+**Deliverables:** Mobile shell, offline sync architecture, push notification support, unit tests for backend and frontend
 
 ---
 
 ## Phase 5: Maintenance Module (Week 9-10)
-**Objective:** Implement preventive and corrective maintenance
+**Objective:** Implement corrective/preventive maintenance and asset workflows.
 
-### Tasks
-- [ ] Maintenance orders
-  - Corrective maintenance order creation
-  - Preventive maintenance (PM) task types
-  - Custom checklists and templates
+### Feature: Maintenance & Asset Management
+#### Backend Tasks
+- [ ] Implement corrective maintenance and PM task models
+- [ ] Implement PM scheduler (frequency rules and task generation)
+- [ ] Implement asset registry and asset lifecycle/history tracking
+- [ ] Implement QR-linked asset lookup and task creation endpoints
+- [ ] Implement maintenance logbook and parts/labor tracking services
+- [ ] Add backend unit tests for PM scheduler, asset lifecycle transitions, and maintenance logbook services
 
-- [ ] PM scheduling engine
-  - Frequency-based scheduling (daily, weekly, monthly)
-  - Asset tracking and associations
-  - Automated PM task generation
-  - Schedule calendar and management
+#### Frontend Tasks
+- [ ] Build maintenance order list/detail and create/edit flows
+- [ ] Build PM schedule and calendar management screens
+- [ ] Build asset management screens and QR scan entry flow
+- [ ] Build maintenance logbook entry and review UI
+- [ ] Add frontend unit tests for PM calendar logic, asset form validation, and maintenance workflow components
 
-- [ ] Equipment/Asset management
-  - Asset registry
-  - Asset properties (location, type, serial number)
-  - QR code generation and scanning
-  - Asset history and lifecycle tracking
-
-- [ ] Maintenance workflows
-  - Offline inspection capability
-  - Maintenance logbook
-  - Parts and labor tracking
-  - Work order documentation
-
-- [ ] Maintenance performance
-  - Equipment uptime tracking
-  - Maintenance cost analysis
-  - Preventive vs. corrective ratio reporting
-
-**Deliverables:** Maintenance order APIs, PM scheduling engine, asset management system, QR code integration
+**Deliverables:** Maintenance APIs, PM engine, asset/QR workflows, unit tests for backend and frontend
 
 ---
 
 ## Phase 6: Guest Experience & Complaints (Week 11-12)
-**Objective:** Centralize guest issues and follow-up management
+**Objective:** Centralize complaint handling, escalation, and follow-up workflows.
 
-### Tasks
-- [ ] Guest complaint management
-  - Complaint creation and centralization
-  - Issue categorization
-  - Severity/priority assignment
-  - Complaint lifecycle tracking
+### Feature: Guest Complaint Lifecycle
+#### Backend Tasks
+- [ ] Implement complaint model, categories, severity, and lifecycle states
+- [ ] Implement incident routing and escalation rules
+- [ ] Implement follow-up and resolution confirmation services
+- [ ] Implement guest-experience analytics endpoints (trends, resolution time, satisfaction)
+- [ ] Add backend unit tests for escalation rules, lifecycle transitions, and analytics aggregators
 
-- [ ] Real-time incident notifications
-  - Notification system for critical issues
-  - Alert routing to responsible teams
-  - Escalation rules and workflows
+#### Frontend Tasks
+- [ ] Build complaint intake, triage, and detail workflows
+- [ ] Build incident alert/notification center for responsible teams
+- [ ] Build follow-up checklist and resolution confirmation UI
+- [ ] Build guest experience trend/insight dashboard screens
+- [ ] Add frontend unit tests for complaint forms, escalation UI states, and analytics widgets
 
-- [ ] Guest follow-up workflow
-  - Follow-up tasks before checkout
-  - Resolution confirmation
-  - Guest satisfaction rating
-
-- [ ] Guest experience analytics
-  - Complaint trends and analysis
-  - Resolution time metrics
-  - Weekly insights and reports
-  - Satisfaction score tracking
-
-- [ ] Mobile complaint management
-  - Staff mobile access to complaints
-  - On-the-spot issue documentation
-  - Photo and evidence attachment
-
-**Deliverables:** Complaint management APIs, notification system, analytics dashboards, mobile features
+**Deliverables:** Complaint management APIs/UI, escalation and follow-up flows, analytics, backend/frontend unit tests
 
 ---
 
 ## Phase 7: Guest Communication Module (Week 13-14)
-**Objective:** Enable guest-initiated service requests
+**Objective:** Enable guest-facing service requests and transparent status tracking.
 
-### Tasks
-- [ ] Guest web app foundation
-  - Guest portal/web app setup
-  - Guest authentication (room number/booking reference)
-  - Responsive design
+### Feature: Guest Request Portal
+#### Backend Tasks
+- [ ] Implement guest request APIs and guest-side authentication/validation flow
+- [ ] Implement routing engine by request type/department/priority
+- [ ] Implement request status timeline and notification hooks
+- [ ] Implement request metrics endpoints (volume, SLA, satisfaction)
+- [ ] Add backend unit tests for routing rules, SLA timers, and status update services
 
-- [ ] Guest request types
-  - Housekeeping requests
-  - Maintenance/maintenance requests
-  - Reservation/concierge requests
-  - Incident reporting
+#### Frontend Tasks
+- [ ] Build guest web app for request submission and status tracking
+- [ ] Build request-type-specific forms (housekeeping, maintenance, concierge, incidents)
+- [ ] Build real-time status/ETA views and completion feedback flow
+- [ ] Build staff-side request queue for routed items
+- [ ] Add frontend unit tests for guest form validation, request tracking UI, and feedback submission flows
 
-- [ ] Request routing engine
-  - Automated routing to responsible teams/departments
-  - Priority assignment based on request type
-  - Escalation workflows
-
-- [ ] Request tracking
-  - Real-time request status
-  - Estimated time to resolution
-  - Guest notification on updates
-  - Feedback collection
-
-- [ ] Request analytics
-  - Request volume by type
-  - Response time metrics
-  - Guest satisfaction by request type
-
-**Deliverables:** Guest web app, request APIs, routing engine, tracking and analytics
+**Deliverables:** Guest web app + request APIs + routing engine + unit tests for backend/frontend
 
 ---
 
 ## Phase 8: Inspections Module (Week 15-16)
-**Objective:** Implement structured inspection workflows
+**Objective:** Implement structured inspections with scoring and history.
 
-### Tasks
-- [ ] Inspection templates
-  - Template creation and management
-  - Standard inspection types (guestroom, public spaces, staff performance)
-  - Step-based workflow definition
+### Feature: Inspection Templates & Execution
+#### Backend Tasks
+- [ ] Implement inspection template/checklist model
+- [ ] Implement inspection execution API with pass/fail/N/A step responses
+- [ ] Implement scoring engine and weighted scoring support
+- [ ] Implement inspection history/reporting endpoints and non-compliance alerts
+- [ ] Add backend unit tests for scoring logic, step validation rules, and non-compliance trigger logic
 
-- [ ] Inspection workflows
-  - Form-based inspection execution
-  - Pass/Fail/N/A response options
-  - Required and optional fields
-  - Photo/evidence attachment
+#### Frontend Tasks
+- [ ] Build inspection template builder UI
+- [ ] Build inspection execution forms for web/mobile contexts
+- [ ] Build scoring summary and historical trend views
+- [ ] Build non-compliance review and action prompts
+- [ ] Add frontend unit tests for checklist rendering, response capture flows, and score display components
 
-- [ ] Scoring system
-  - Automated scoring calculation
-  - Weighted scoring options
-  - Historical score tracking
-
-- [ ] Inspection reporting
-  - Inspection reports with scores
-  - Trend analysis over time
-  - Area/location based comparisons
-  - Non-compliance alerts
-
-- [ ] Mobile inspection support
-  - Mobile-optimized inspection forms
-  - Offline inspection capability
-  - Photo integration
-
-**Deliverables:** Inspection APIs, template system, scoring engine, reporting dashboards
+**Deliverables:** Inspection templates/workflows/scoring APIs + inspection UI + backend/frontend unit tests
 
 ---
 
 ## Phase 9: Risk & Compliance Module (Week 17-18)
-**Objective:** Implement governance and compliance management
+**Objective:** Implement compliance governance, risk tracking, and audit visibility.
 
-### Tasks
-- [ ] Compliance management framework
-  - Compliance requirement definitions
-  - Compliance tracking
-  - Compliance calendar/schedule
+### Feature: Risk & Compliance Governance
+#### Backend Tasks
+- [ ] Implement compliance requirement/checklist model and schedules
+- [ ] Implement risk registry and mitigation tracking services
+- [ ] Implement legal/contract/audit record services
+- [ ] Implement compliance dashboard aggregates and alert generation
+- [ ] Add backend unit tests for compliance status computations, risk scoring, and audit-trail services
 
-- [ ] Risk management
-  - Risk identification and assessment
-  - Risk registry
-  - Mitigation tracking
+#### Frontend Tasks
+- [ ] Build compliance checklist and corrective action workflows
+- [ ] Build risk registry and mitigation tracking screens
+- [ ] Build compliance dashboards by category/property
+- [ ] Build legal/audit record views and approval trails
+- [ ] Add frontend unit tests for compliance status visualization, risk forms, and dashboard filtering interactions
 
-- [ ] Compliance dashboards
-  - Multi-property compliance overview
-  - Compliance status by category
-  - Alert generation for non-compliance
-  - Compliance trend analysis
-
-- [ ] Legal and audit management
-  - Document management (contracts, policies)
-  - Audit trail and logging
-  - Change tracking and approvals
-  - Audit report generation
-
-- [ ] Governance oversight
-  - Policy management
-  - Approval workflows
-  - Role-based access for compliance oversight
-
-**Deliverables:** Compliance management APIs, risk registry, dashboards, audit logging system
+**Deliverables:** Compliance/risk APIs + governance dashboards + legal/audit UI + backend/frontend unit tests
 
 ---
 
-## Phase 10: Projects, Finance & Advanced Modules (Week 19-20)
-**Objective:** Implement specialized modules for projects, F&B, corporate, and energy
+## Phase 10: Projects, F&B, Corporate, Energy (Week 19-20)
+**Objective:** Implement advanced operational modules for project/corporate oversight.
 
-### Tasks
-- [ ] Projects module
-  - Snagging list management
-  - Technical audit tracking
-  - Project status and timeline
-  - Stakeholder management
+### Feature: Projects Module
+#### Backend Tasks
+- [ ] Implement project, snagging item, and technical audit models/services
+- [ ] Implement project status/timeline update services
+- [ ] Add backend unit tests for project status transitions and snagging item workflows
 
-- [ ] Food & Beverage module
-  - Breakfast operation tracking
-  - Outlet coordination
-  - F&B performance metrics
-  - Staff assignment for F&B
+#### Frontend Tasks
+- [ ] Build project overview, snagging list, and audit item UI
+- [ ] Build project progress/timeline views
+- [ ] Add frontend unit tests for project board interactions and snagging/audit forms
 
-- [ ] Corporate management
-  - Contract management
-  - Supplier management
-  - Order management (purchase orders)
-  - CAPEX tracking and approval workflows
+### Feature: Food & Beverage Module
+#### Backend Tasks
+- [ ] Implement breakfast count, outlet readiness, and task assignment services
+- [ ] Add backend unit tests for F&B metric calculations and assignment logic
 
-- [ ] Energy & Sustainability module
-  - Energy KPI definitions
-  - Energy consumption tracking
-  - Efficiency analysis and reporting
-  - Sustainability metrics
-  - Utility cost tracking
+#### Frontend Tasks
+- [ ] Build breakfast/outlet tracking UI and staff assignment views
+- [ ] Add frontend unit tests for F&B dashboards and assignment workflows
 
-**Deliverables:** Projects APIs, F&B tracking system, corporate management suite, energy analytics
+### Feature: Corporate Management Module
+#### Backend Tasks
+- [ ] Implement supplier, contract, purchase order, and CAPEX services
+- [ ] Implement approval workflow rules for CAPEX and POs
+- [ ] Add backend unit tests for approval rules and procurement workflows
+
+#### Frontend Tasks
+- [ ] Build supplier/contract/PO/CAPEX management screens
+- [ ] Build approval queue and decision UI
+- [ ] Add frontend unit tests for approval interactions and form validation
+
+### Feature: Energy & Sustainability Module
+#### Backend Tasks
+- [ ] Implement energy KPI ingestion, normalization, and trend services
+- [ ] Implement utility-cost tracking and efficiency calculations
+- [ ] Add backend unit tests for KPI normalization and trend computations
+
+#### Frontend Tasks
+- [ ] Build energy KPI dashboards and trend analysis views
+- [ ] Build sustainability metric reports UI
+- [ ] Add frontend unit tests for energy charts and filter interactions
+
+**Deliverables:** Projects/F&B/Corporate/Energy module APIs + UIs + backend/frontend unit tests
 
 ---
 
 ## Phase 11: Reporting, Analytics & System Integration (Week 21-22)
-**Objective:** Implement comprehensive analytics, dashboards, and external integrations
+**Objective:** Deliver cross-module analytics, exports, and external integrations.
 
-### Tasks
-- [ ] Business Intelligence (BI) framework
-  - Data warehouse setup or analytics database
-  - ETL processes
-  - Real-time data aggregation
+### Feature: Reporting & Analytics Platform
+#### Backend Tasks
+- [ ] Implement BI data mart/warehouse pipelines for operational metrics
+- [ ] Implement report generation services (scheduled + on-demand)
+- [ ] Implement export services (Excel/PDF/email delivery)
+- [ ] Add backend unit tests for report builders, schedulers, and export formatters
 
-- [ ] Executive dashboards
-  - Hotel operations overview
-  - High-level KPI displays
-  - Trend visualization
-  - Custom report builder
+#### Frontend Tasks
+- [ ] Build executive dashboard and department-level KPI dashboards
+- [ ] Build custom report builder and scheduled report management UI
+- [ ] Build export/download and report subscription UI
+- [ ] Add frontend unit tests for dashboard widgets, report builder state, and schedule forms
 
-- [ ] Department-specific reports
-  - Housekeeping efficiency reports
-  - Maintenance ROI and cost tracking
-  - Guest satisfaction reports
-  - Compliance status reports
+### Feature: External Integrations
+#### Backend Tasks
+- [ ] Implement PMS connectors (occupancy, guest, reservation events)
+- [ ] Implement third-party connectors (accounting, BAS/IoT, email/SMS)
+- [ ] Implement resilient retry/idempotency patterns for integration jobs
+- [ ] Add backend unit tests for mapping/transform services, retry policies, and connector adapters
 
-- [ ] PMS integration
-  - Occupancy data sync
-  - Guest information
-  - Reservation events (check-in, check-out)
-  - Revenue/rate updates
+#### Frontend Tasks
+- [ ] Build integration configuration and connection-status screens
+- [ ] Build sync logs, integration alerts, and troubleshooting views
+- [ ] Add frontend unit tests for integration settings forms and sync log rendering
 
-- [ ] Third-party system integrations
-  - Accounting system integration
-  - Building automation systems
-  - IoT sensors (if applicable)
-  - Email/SMS gateways
-
-- [ ] Data export and reporting
-  - Scheduled report generation
-  - Export to Excel/PDF
-  - Email distribution
-  - API access for external systems
-
-**Deliverables:** BI platform, dashboards, PMS integration, third-party connectors, reporting engine
+**Deliverables:** BI/reporting platform, PMS/3rd-party integrations, backend/frontend unit tests
 
 ---
 
@@ -436,7 +345,8 @@ A comprehensive hotel operations management platform (TicketingSystem) with modu
 - GDPR/compliance considerations
 
 ### Testing Strategy
-- Unit tests for all business logic
+- Unit tests required for every backend feature task
+- Unit tests required for every frontend feature task
 - Integration tests for API endpoints
 - End-to-end tests for critical workflows
 - Performance testing for scalability
@@ -467,7 +377,9 @@ A comprehensive hotel operations management platform (TicketingSystem) with modu
 ## Success Metrics
 
 ### For Each Phase
-- [ ] All planned features implemented
+- [ ] All planned backend tasks implemented
+- [ ] All planned frontend tasks implemented
+- [ ] Backend and frontend unit tests completed for all feature tasks
 - [ ] Code coverage >80%
 - [ ] Performance benchmarks met
 - [ ] UAT sign-off obtained
@@ -517,9 +429,8 @@ A comprehensive hotel operations management platform (TicketingSystem) with modu
 
 ## Next Steps
 
-1. **Review & Approval:** Stakeholder review and approval of phases
-2. **Resource Planning:** Allocate team members to each phase
+1. **Review & Approval:** Stakeholder review and approval of revised backend/frontend split tasks
+2. **Resource Planning:** Allocate backend and frontend owners for each phase
 3. **Tool Setup:** Configure development environment, CI/CD, and monitoring
 4. **Phase 1 Kickoff:** Begin with foundation and core infrastructure
 5. **Weekly Reviews:** Track progress and adjust timeline as needed
-
