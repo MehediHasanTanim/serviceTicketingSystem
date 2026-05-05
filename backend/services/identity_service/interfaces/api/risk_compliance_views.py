@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -55,6 +56,8 @@ from interfaces.api.serializers import (
     RiskUpdateSerializer,
 )
 
+MAX_PAGE_SIZE = 100
+
 
 def _has_permission(user, code: str) -> bool:
     if not user:
@@ -88,6 +91,18 @@ def _audit(request, *, org_id: int, action: str, entity_type: str, entity_id: st
         )
     except Exception:
         pass
+
+
+def _parse_page(request):
+    page = max(int(request.query_params.get("page", "1") or "1"), 1)
+    page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), MAX_PAGE_SIZE)
+    return page, page_size
+
+
+def _paginate_rows(qs, *, page: int, page_size: int):
+    total = qs.count()
+    offset = (page - 1) * page_size
+    return total, qs[offset:offset + page_size]
 
 
 def _req_dict(obj: ComplianceRequirement) -> dict:
@@ -169,6 +184,53 @@ def _risk_dict(obj: RiskRegisterItem) -> dict:
     }
 
 
+def _legal_dict(obj: LegalContractRecord) -> dict:
+    return {
+        "id": obj.id,
+        "record_code": obj.record_code,
+        "title": obj.title,
+        "description": obj.description,
+        "record_type": obj.record_type,
+        "property_id": obj.property_id,
+        "department_id": obj.department_id,
+        "owner_id": obj.owner_id,
+        "vendor_name": obj.vendor_name,
+        "effective_date": obj.effective_date,
+        "expiry_date": obj.expiry_date,
+        "renewal_due_at": obj.renewal_due_at,
+        "status": obj.status,
+        "attachment_id": obj.attachment_id,
+        "notes": obj.notes,
+        "created_by": obj.created_by_id,
+        "updated_by": obj.updated_by_id,
+        "created_at": obj.created_at,
+        "updated_at": obj.updated_at,
+    }
+
+
+def _audit_record_dict(obj: AuditRecord) -> dict:
+    return {
+        "id": obj.id,
+        "audit_code": obj.audit_code,
+        "title": obj.title,
+        "scope": obj.scope,
+        "auditor": obj.auditor,
+        "property_id": obj.property_id,
+        "department_id": obj.department_id,
+        "audit_date": obj.audit_date,
+        "result": obj.result,
+        "score": obj.score,
+        "findings_summary": obj.findings_summary,
+        "corrective_actions_required": obj.corrective_actions_required,
+        "attachment_id": obj.attachment_id,
+        "related_risk_id": obj.related_risk_id,
+        "related_check_id": obj.related_check_id,
+        "created_by": obj.created_by_id,
+        "created_at": obj.created_at,
+        "updated_at": obj.updated_at,
+    }
+
+
 class ComplianceRequirementListCreateView(APIView):
     repository = ComplianceRequirementRepository()
 
@@ -226,8 +288,9 @@ class ComplianceRequirementListCreateView(APIView):
         q = request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(requirement_code__icontains=q))
-        rows = qs.order_by("-updated_at")
-        return Response({"count": rows.count(), "results": [_req_dict(r) for r in rows]})
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(qs.order_by("-updated_at"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_req_dict(r) for r in rows]})
 
 
 class ComplianceRequirementDetailView(APIView):
@@ -329,8 +392,9 @@ class ComplianceCheckListView(APIView):
             priority=request.query_params.get("priority"),
             category=request.query_params.get("category"),
         )
-        rows = self.repository.list(filters).order_by("due_at")
-        return Response({"count": rows.count(), "results": [_check_dict(r) for r in rows]})
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(self.repository.list(filters).order_by("due_at"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_check_dict(r) for r in rows]})
 
 
 class ComplianceCheckDetailView(APIView):
@@ -461,8 +525,21 @@ class RiskListCreateView(APIView):
             risk_level=request.query_params.get("risk_level"),
             status=request.query_params.get("status"),
         )
-        rows = self.repository.list(filters).order_by("-created_at")
-        return Response({"count": rows.count(), "results": [_risk_dict(r) for r in rows]})
+        q = request.query_params.get("q", "").strip()
+        rows = self.repository.list(filters)
+        if q:
+            rows = rows.filter(Q(risk_code__icontains=q) | Q(title__icontains=q) | Q(category__icontains=q))
+        if request.query_params.get("due_from"):
+            due_from = parse_datetime(request.query_params["due_from"])
+            if due_from:
+                rows = rows.filter(due_at__gte=due_from)
+        if request.query_params.get("due_to"):
+            due_to = parse_datetime(request.query_params["due_to"])
+            if due_to:
+                rows = rows.filter(due_at__lte=due_to)
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(rows.order_by("-created_at"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_risk_dict(r) for r in rows]})
 
 
 class RiskDetailView(APIView):
@@ -596,8 +673,13 @@ class LegalRecordListCreateView(APIView):
             expiry_from=parse_date(request.query_params.get("expiry_from")) if request.query_params.get("expiry_from") else None,
             expiry_to=parse_date(request.query_params.get("expiry_to")) if request.query_params.get("expiry_to") else None,
         )
-        rows = self.repository.list(filters).order_by("expiry_date", "id")
-        return Response({"count": rows.count(), "results": [{"id": r.id, "record_code": r.record_code, "record_type": r.record_type, "status": r.status, "expiry_date": r.expiry_date, "renewal_due_at": r.renewal_due_at} for r in rows]})
+        rows = self.repository.list(filters)
+        q = request.query_params.get("q", "").strip()
+        if q:
+            rows = rows.filter(Q(record_code__icontains=q) | Q(title__icontains=q) | Q(vendor_name__icontains=q))
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(rows.order_by("expiry_date", "id"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_legal_dict(r) for r in rows]})
 
 
 class LegalRecordDetailView(APIView):
@@ -612,7 +694,7 @@ class LegalRecordDetailView(APIView):
         except RiskComplianceNotFoundError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         row = update_legal_status(row)
-        return Response({"id": row.id, "record_code": row.record_code, "status": row.status, "expiry_date": row.expiry_date, "renewal_due_at": row.renewal_due_at})
+        return Response(_legal_dict(row))
 
     def patch(self, request, id: int):
         if not _has_permission(request.user, "risk_compliance.legal.manage"):
@@ -630,7 +712,7 @@ class LegalRecordDetailView(APIView):
         row.save()
         row = update_legal_status(row)
         _audit(request, org_id=row.org_id, action="legal_record_updated", entity_type="legal_record", entity_id=str(row.id), actor=request.user)
-        return Response({"id": row.id, "status": row.status})
+        return Response(_legal_dict(row))
 
 
 class AuditRecordListCreateView(APIView):
@@ -670,8 +752,9 @@ class AuditRecordListCreateView(APIView):
         if not _has_permission(request.user, "risk_compliance.audit_records.view"):
             return Response({"detail": "Permission required: risk_compliance.audit_records.view"}, status=status.HTTP_403_FORBIDDEN)
         org_id = int(request.query_params.get("org_id", "0"))
-        rows = self.repository.list(org_id=org_id).order_by("-created_at")
-        return Response({"count": rows.count(), "results": [{"id": r.id, "audit_code": r.audit_code, "result": r.result, "score": r.score, "corrective_actions_required": r.corrective_actions_required} for r in rows]})
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(self.repository.list(org_id=org_id).order_by("-created_at"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_audit_record_dict(r) for r in rows]})
 
 
 class AuditRecordDetailView(APIView):
@@ -685,7 +768,7 @@ class AuditRecordDetailView(APIView):
             row = self.repository.get_for_org(org_id=org_id, record_id=id)
         except RiskComplianceNotFoundError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"id": row.id, "audit_code": row.audit_code, "findings_summary": row.findings_summary, "score": row.score, "corrective_actions_required": row.corrective_actions_required})
+        return Response(_audit_record_dict(row))
 
 
 class DashboardSummaryView(APIView):
@@ -775,4 +858,64 @@ class RiskComplianceAuditLogView(APIView):
             return Response({"detail": "Permission required: audit.view"}, status=status.HTTP_403_FORBIDDEN)
         org_id = int(request.query_params.get("org_id", "0"))
         rows = risk_compliance_audit_logs(org_id=org_id)
-        return Response({"count": rows.count(), "results": [{"id": r.id, "actor_id": r.actor_user_id, "action": r.action, "entity_type": r.target_type, "entity_id": r.target_id, "metadata": r.metadata_json, "ip_address": r.ip_address, "user_agent": r.user_agent, "created_at": r.created_at} for r in rows]})
+        q = request.query_params.get("q", "").strip()
+        if q:
+            rows = rows.filter(Q(action__icontains=q) | Q(target_type__icontains=q) | Q(target_id__icontains=q))
+        if request.query_params.get("actor_user_id"):
+            rows = rows.filter(actor_user_id=int(request.query_params["actor_user_id"]))
+        if request.query_params.get("action"):
+            rows = rows.filter(action__icontains=request.query_params["action"])
+        if request.query_params.get("target_type"):
+            rows = rows.filter(target_type__icontains=request.query_params["target_type"])
+        if request.query_params.get("target_id"):
+            rows = rows.filter(target_id=request.query_params["target_id"])
+        page, page_size = _parse_page(request)
+        total, rows = _paginate_rows(rows.order_by("-created_at"), page=page, page_size=page_size)
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [{"id": r.id, "actor_user_id": r.actor_user_id, "action": r.action, "target_type": r.target_type, "target_id": r.target_id, "metadata": r.metadata_json, "ip_address": r.ip_address, "user_agent": r.user_agent, "created_at": r.created_at} for r in rows]})
+
+
+class RiskComplianceApprovalTrailView(APIView):
+    def get(self, request):
+        if not _has_permission(request.user, "audit.view"):
+            return Response({"detail": "Permission required: audit.view"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id", "0"))
+        entity_type = request.query_params.get("entity_type", "").strip()
+        entity_id = request.query_params.get("entity_id", "").strip()
+        if not org_id or not entity_type or not entity_id:
+            return Response({"detail": "org_id, entity_type and entity_id are required"}, status=status.HTTP_400_BAD_REQUEST)
+        rows = risk_compliance_audit_logs(org_id=org_id).filter(target_type=entity_type, target_id=entity_id)
+        approval_rows = rows.filter(action__in=["risk_compliance_approval_submitted", "risk_compliance_approval_approved", "risk_compliance_approval_rejected"]).order_by("created_at")
+        return Response({
+            "count": approval_rows.count(),
+            "results": [
+                {
+                    "approver": str(r.actor_user_id or "System"),
+                    "decision": "APPROVED" if r.action.endswith("approved") else "REJECTED" if r.action.endswith("rejected") else "PENDING",
+                    "timestamp": r.created_at,
+                    "comment": r.metadata_json.get("comment", ""),
+                    "status": "COMPLETED" if r.action.endswith(("approved", "rejected")) else "PENDING",
+                }
+                for r in approval_rows
+            ],
+        })
+
+    def post(self, request):
+        if not _has_permission(request.user, "risk_compliance.approvals.manage"):
+            return Response({"detail": "Permission required: risk_compliance.approvals.manage"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.data.get("org_id", 0))
+        entity_type = str(request.data.get("entity_type", "")).strip()
+        entity_id = str(request.data.get("entity_id", "")).strip()
+        decision = str(request.data.get("decision", "")).strip().upper()
+        comment = str(request.data.get("comment", "")).strip()
+        if not org_id or not entity_type or not entity_id or decision not in ["APPROVE", "REJECT"]:
+            return Response({"detail": "org_id, entity_type, entity_id and decision(APPROVE|REJECT) are required"}, status=status.HTTP_400_BAD_REQUEST)
+        _audit(
+            request,
+            org_id=org_id,
+            action="approval_approved" if decision == "APPROVE" else "approval_rejected",
+            entity_type=entity_type,
+            entity_id=entity_id,
+            metadata={"comment": comment, "decision": decision},
+            actor=request.user,
+        )
+        return Response({"entity_type": entity_type, "entity_id": entity_id, "decision": decision, "comment": comment}, status=status.HTTP_200_OK)

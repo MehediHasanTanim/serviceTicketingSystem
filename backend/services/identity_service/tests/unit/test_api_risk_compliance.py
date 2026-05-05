@@ -27,6 +27,7 @@ def test_risk_compliance_api_flow_and_audit_logs():
             "risk_compliance.dashboard.view",
             "risk_compliance.alerts.view",
             "risk_compliance.alerts.manage",
+            "risk_compliance.approvals.manage",
             "audit.view",
         ],
         role_name="risk-compliance-manager",
@@ -50,9 +51,11 @@ def test_risk_compliance_api_flow_and_audit_logs():
     schedule = client.post(reverse("risk-compliance-schedule-run"), {"org_id": org.id}, format="json")
     assert schedule.status_code == 200
 
-    checks = client.get(reverse("risk-compliance-checks"), {"org_id": org.id})
+    checks = client.get(reverse("risk-compliance-checks"), {"org_id": org.id, "page": 1, "page_size": 10})
     assert checks.status_code == 200
     assert checks.data["count"] == 1
+    assert checks.data["page"] == 1
+    assert checks.data["page_size"] == 10
     check_id = checks.data["results"][0]["id"]
 
     submit = client.post(
@@ -103,6 +106,7 @@ def test_risk_compliance_api_flow_and_audit_logs():
         format="json",
     )
     assert legal_upd.status_code == 200
+    assert legal_upd.data["notes"] == "updated"
 
     audit_record = client.post(
         reverse("risk-compliance-audit-records"),
@@ -129,6 +133,18 @@ def test_risk_compliance_api_flow_and_audit_logs():
 
     audit_logs = client.get(reverse("risk-compliance-audit-logs"), {"org_id": org.id})
     assert audit_logs.status_code == 200
+    assert "page" in audit_logs.data
+    assert "page_size" in audit_logs.data
+
+    trail_post = client.post(
+        reverse("risk-compliance-approval-trails"),
+        {"org_id": org.id, "entity_type": "compliance_check", "entity_id": str(check_id), "decision": "APPROVE", "comment": "approved by manager"},
+        format="json",
+    )
+    assert trail_post.status_code == 200
+    trail_get = client.get(reverse("risk-compliance-approval-trails"), {"org_id": org.id, "entity_type": "compliance_check", "entity_id": str(check_id)})
+    assert trail_get.status_code == 200
+    assert trail_get.data["count"] >= 1
     actions = set(AuditLog.objects.filter(org=org).values_list("action", flat=True))
     assert "risk_compliance_compliance_requirement_created" in actions
     assert "risk_compliance_compliance_check_submitted" in actions

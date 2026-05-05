@@ -34,6 +34,19 @@ import { InspectionExecutionPage } from '../modules/inspections/pages/Inspection
 import { InspectionReportsPage } from '../modules/inspections/pages/InspectionReportsPage'
 import { NonComplianceAlertsPage } from '../modules/inspections/pages/NonComplianceAlertsPage'
 import { InspectionAuditLogsPage } from '../modules/inspections/pages/InspectionAuditLogsPage'
+import { ComplianceChecksPage } from '../modules/risk-compliance/pages/ComplianceChecksPage'
+import { ComplianceCheckDetailPage } from '../modules/risk-compliance/pages/ComplianceCheckDetailPage'
+import { ComplianceRequirementFormPage } from '../modules/risk-compliance/pages/ComplianceRequirementFormPage'
+import { ComplianceRequirementsPage } from '../modules/risk-compliance/pages/ComplianceRequirementsPage'
+import { RiskRegistryPage } from '../modules/risk-compliance/pages/RiskRegistryPage'
+import { RiskFormPage } from '../modules/risk-compliance/pages/RiskFormPage'
+import { RiskDetailPage } from '../modules/risk-compliance/pages/RiskDetailPage'
+import { RiskComplianceDashboardPage } from '../modules/risk-compliance/pages/RiskComplianceDashboardPage'
+import { LegalRecordsPage } from '../modules/risk-compliance/pages/LegalRecordsPage'
+import { LegalRecordDetailPage } from '../modules/risk-compliance/pages/LegalRecordDetailPage'
+import { AuditRecordsPage } from '../modules/risk-compliance/pages/AuditRecordsPage'
+import { AuditRecordDetailPage } from '../modules/risk-compliance/pages/AuditRecordDetailPage'
+import { RiskComplianceAuditLogsPage } from '../modules/risk-compliance/pages/RiskComplianceAuditLogsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -110,6 +123,23 @@ export function App() {
           <Route path="/inspections/reports" element={<PrivateRoute><InspectionReportsPage /></PrivateRoute>} />
           <Route path="/inspections/non-compliance-alerts" element={<PrivateRoute><NonComplianceAlertsPage /></PrivateRoute>} />
           <Route path="/inspections/audit-logs" element={<PrivateRoute><InspectionAuditLogsPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/dashboard" element={<PrivateRoute><RiskComplianceDashboardPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/requirements" element={<PrivateRoute><ComplianceRequirementsPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/requirements/new" element={<PrivateRoute><ComplianceRequirementFormPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/requirements/:id" element={<PrivateRoute><ComplianceRequirementFormPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/checks" element={<PrivateRoute><ComplianceChecksPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/checks/:id" element={<PrivateRoute><ComplianceCheckDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/risks" element={<PrivateRoute><RiskRegistryPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/risks/new" element={<PrivateRoute><RiskFormPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/risks/:id" element={<PrivateRoute><RiskDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/risks/:id/edit" element={<PrivateRoute><RiskFormPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/legal-records" element={<PrivateRoute><LegalRecordsPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/legal-records/new" element={<PrivateRoute><LegalRecordDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/legal-records/:id" element={<PrivateRoute><LegalRecordDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/audit-records" element={<PrivateRoute><AuditRecordsPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/audit-records/new" element={<PrivateRoute><AuditRecordDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/audit-records/:id" element={<PrivateRoute><AuditRecordDetailPage /></PrivateRoute>} />
+          <Route path="/risk-compliance/audit-logs" element={<PrivateRoute><RiskComplianceAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

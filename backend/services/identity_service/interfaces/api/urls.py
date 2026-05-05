@@ -151,5 +151,6 @@ urlpatterns = [
     path("risk-compliance/alerts/<int:id>/acknowledge", risk_compliance_views.AlertAcknowledgeView.as_view(), name="risk-compliance-alert-ack"),
     path("risk-compliance/alerts/<int:id>/resolve", risk_compliance_views.AlertResolveView.as_view(), name="risk-compliance-alert-resolve"),
     path("risk-compliance/audit-logs", risk_compliance_views.RiskComplianceAuditLogView.as_view(), name="risk-compliance-audit-logs"),
+    path("risk-compliance/approval-trails", risk_compliance_views.RiskComplianceApprovalTrailView.as_view(), name="risk-compliance-approval-trails"),
 
 ]
