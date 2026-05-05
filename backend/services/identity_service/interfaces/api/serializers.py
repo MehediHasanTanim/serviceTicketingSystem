@@ -515,3 +515,108 @@ class HousekeepingTaskActionSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
     note = serializers.CharField(required=False, allow_blank=True)
     reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    guest_id = serializers.IntegerField(required=False, allow_null=True)
+    guest_name = serializers.CharField(max_length=255)
+    guest_contact = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    property_id = serializers.IntegerField()
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    category = serializers.ChoiceField(choices=["ROOM_CLEANLINESS", "MAINTENANCE", "NOISE", "STAFF_BEHAVIOR", "BILLING", "FOOD_BEVERAGE", "CHECK_IN_CHECK_OUT", "SAFETY_SECURITY", "OTHER"])
+    severity = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], default="MEDIUM")
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    source = serializers.ChoiceField(choices=["FRONT_DESK", "GUEST_PORTAL", "PHONE", "EMAIL", "STAFF", "PMS", "OTHER"], default="FRONT_DESK")
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    reported_at = serializers.DateTimeField(required=False, allow_null=True)
+    shift = serializers.ChoiceField(choices=["MORNING", "AFTERNOON", "NIGHT"], required=False, allow_blank=True)
+    vip_guest = serializers.BooleanField(required=False, default=False)
+
+
+class GuestComplaintUpdateSerializer(serializers.Serializer):
+    guest_name = serializers.CharField(max_length=255, required=False)
+    guest_contact = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    category = serializers.ChoiceField(choices=["ROOM_CLEANLINESS", "MAINTENANCE", "NOISE", "STAFF_BEHAVIOR", "BILLING", "FOOD_BEVERAGE", "CHECK_IN_CHECK_OUT", "SAFETY_SECURITY", "OTHER"], required=False)
+    severity = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False)
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    source = serializers.ChoiceField(choices=["FRONT_DESK", "GUEST_PORTAL", "PHONE", "EMAIL", "STAFF", "PMS", "OTHER"], required=False)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    reported_at = serializers.DateTimeField(required=False, allow_null=True)
+    shift = serializers.ChoiceField(choices=["MORNING", "AFTERNOON", "NIGHT"], required=False, allow_blank=True)
+    vip_guest = serializers.BooleanField(required=False)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class GuestComplaintAssignSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    assignee_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintTransitionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintEscalateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    reason = serializers.CharField()
+    escalated_to = serializers.IntegerField(required=False, allow_null=True)
+    escalation_level = serializers.IntegerField(required=False, default=1)
+
+
+class GuestComplaintResolutionConfirmSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    satisfaction_score = serializers.DecimalField(max_digits=4, decimal_places=2)
+    satisfaction_comment = serializers.CharField(required=False, allow_blank=True)
+    confirmed_by = serializers.IntegerField(required=False, allow_null=True)
+    confirmation_channel = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintFollowUpCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    follow_up_type = serializers.CharField(max_length=64)
+    scheduled_at = serializers.DateTimeField()
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintFollowUpCompleteSerializer(serializers.Serializer):
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class GuestComplaintResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    complaint_number = serializers.CharField()
+    org_id = serializers.IntegerField()
+    guest_id = serializers.IntegerField(required=False, allow_null=True)
+    guest_name = serializers.CharField()
+    guest_contact = serializers.CharField()
+    property_id = serializers.IntegerField()
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    category = serializers.CharField()
+    severity = serializers.CharField()
+    status = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    source = serializers.CharField()
+    vip_guest = serializers.BooleanField()
+    reported_at = serializers.DateTimeField(required=False, allow_null=True)
+    shift = serializers.CharField(allow_blank=True)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    escalated_to = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    resolved_at = serializers.DateTimeField(required=False, allow_null=True)
+    confirmed_at = serializers.DateTimeField(required=False, allow_null=True)
+    satisfaction_score = serializers.DecimalField(max_digits=4, decimal_places=2, required=False, allow_null=True)
+    satisfaction_comment = serializers.CharField()
+    created_by = serializers.IntegerField()
+    updated_by = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()

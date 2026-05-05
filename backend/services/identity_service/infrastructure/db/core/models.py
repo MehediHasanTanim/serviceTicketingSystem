@@ -812,3 +812,247 @@ class InviteToken(models.Model):
         indexes = [
             models.Index(fields=["user", "expires_at"], name="invite_user_exp_idx"),
         ]
+
+
+class GuestComplaint(TimestampedModel):
+    CATEGORY_ROOM_CLEANLINESS = "ROOM_CLEANLINESS"
+    CATEGORY_MAINTENANCE = "MAINTENANCE"
+    CATEGORY_NOISE = "NOISE"
+    CATEGORY_STAFF_BEHAVIOR = "STAFF_BEHAVIOR"
+    CATEGORY_BILLING = "BILLING"
+    CATEGORY_FOOD_BEVERAGE = "FOOD_BEVERAGE"
+    CATEGORY_CHECK_IN_CHECK_OUT = "CHECK_IN_CHECK_OUT"
+    CATEGORY_SAFETY_SECURITY = "SAFETY_SECURITY"
+    CATEGORY_OTHER = "OTHER"
+    CATEGORY_CHOICES = [
+        (CATEGORY_ROOM_CLEANLINESS, "Room Cleanliness"),
+        (CATEGORY_MAINTENANCE, "Maintenance"),
+        (CATEGORY_NOISE, "Noise"),
+        (CATEGORY_STAFF_BEHAVIOR, "Staff Behavior"),
+        (CATEGORY_BILLING, "Billing"),
+        (CATEGORY_FOOD_BEVERAGE, "Food & Beverage"),
+        (CATEGORY_CHECK_IN_CHECK_OUT, "Check-In / Check-Out"),
+        (CATEGORY_SAFETY_SECURITY, "Safety & Security"),
+        (CATEGORY_OTHER, "Other"),
+    ]
+
+    SEVERITY_LOW = "LOW"
+    SEVERITY_MEDIUM = "MEDIUM"
+    SEVERITY_HIGH = "HIGH"
+    SEVERITY_CRITICAL = "CRITICAL"
+    SEVERITY_CHOICES = [
+        (SEVERITY_LOW, "Low"),
+        (SEVERITY_MEDIUM, "Medium"),
+        (SEVERITY_HIGH, "High"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_NEW = "NEW"
+    STATUS_TRIAGED = "TRIAGED"
+    STATUS_ASSIGNED = "ASSIGNED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_ESCALATED = "ESCALATED"
+    STATUS_RESOLVED = "RESOLVED"
+    STATUS_CONFIRMED = "CONFIRMED"
+    STATUS_REOPENED = "REOPENED"
+    STATUS_CLOSED = "CLOSED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_NEW, "New"),
+        (STATUS_TRIAGED, "Triaged"),
+        (STATUS_ASSIGNED, "Assigned"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_ESCALATED, "Escalated"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_REOPENED, "Reopened"),
+        (STATUS_CLOSED, "Closed"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    SOURCE_FRONT_DESK = "FRONT_DESK"
+    SOURCE_GUEST_PORTAL = "GUEST_PORTAL"
+    SOURCE_PHONE = "PHONE"
+    SOURCE_EMAIL = "EMAIL"
+    SOURCE_STAFF = "STAFF"
+    SOURCE_PMS = "PMS"
+    SOURCE_OTHER = "OTHER"
+    SOURCE_CHOICES = [
+        (SOURCE_FRONT_DESK, "Front Desk"),
+        (SOURCE_GUEST_PORTAL, "Guest Portal"),
+        (SOURCE_PHONE, "Phone"),
+        (SOURCE_EMAIL, "Email"),
+        (SOURCE_STAFF, "Staff"),
+        (SOURCE_PMS, "PMS"),
+        (SOURCE_OTHER, "Other"),
+    ]
+
+    SHIFT_MORNING = "MORNING"
+    SHIFT_AFTERNOON = "AFTERNOON"
+    SHIFT_NIGHT = "NIGHT"
+    SHIFT_CHOICES = [
+        (SHIFT_MORNING, "Morning"),
+        (SHIFT_AFTERNOON, "Afternoon"),
+        (SHIFT_NIGHT, "Night"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="guest_complaints")
+    complaint_number = models.CharField(max_length=64, unique=True)
+    guest_id = models.BigIntegerField(null=True, blank=True)
+    guest_name = models.CharField(max_length=255)
+    guest_contact = models.CharField(max_length=255, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="guest_complaints")
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="guest_complaints", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="guest_complaints", null=True, blank=True)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default=SEVERITY_MEDIUM)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_NEW)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    source = models.CharField(max_length=32, choices=SOURCE_CHOICES, default=SOURCE_FRONT_DESK)
+    vip_guest = models.BooleanField(default=False)
+    reported_at = models.DateTimeField(null=True, blank=True)
+    shift = models.CharField(max_length=16, choices=SHIFT_CHOICES, blank=True)
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="assigned_guest_complaints",
+        null=True,
+        blank=True,
+    )
+    escalated_to = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="escalated_guest_complaints",
+        null=True,
+        blank=True,
+    )
+    due_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    satisfaction_score = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    satisfaction_comment = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_guest_complaints")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_guest_complaints")
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["property", "status"], name="guest_cmp_prop_status_idx"),
+            models.Index(fields=["property", "severity"], name="guest_cmp_prop_severity_idx"),
+            models.Index(fields=["property", "category"], name="guest_cmp_prop_category_idx"),
+            models.Index(fields=["assigned_to"], name="guest_cmp_assignee_idx"),
+            models.Index(fields=["created_at"], name="guest_cmp_created_idx"),
+        ]
+
+
+class GuestComplaintRoutingRule(TimestampedModel):
+    category = models.CharField(max_length=32, choices=GuestComplaint.CATEGORY_CHOICES)
+    severity = models.CharField(max_length=16, choices=GuestComplaint.SEVERITY_CHOICES, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="guest_complaint_routing_rules", null=True, blank=True)
+    shift = models.CharField(max_length=16, choices=GuestComplaint.SHIFT_CHOICES, blank=True)
+    vip_only = models.BooleanField(default=False)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="guest_complaint_routing_rules")
+    assign_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="guest_complaint_routing_rules", null=True, blank=True)
+    priority = models.PositiveIntegerField(default=100)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["is_active", "priority"], name="gc_rule_active_prio_idx"),
+            models.Index(fields=["category", "severity"], name="gc_rule_cat_sev_idx"),
+            models.Index(fields=["property", "shift"], name="gc_rule_prop_shift_idx"),
+        ]
+
+
+class GuestComplaintStatusHistory(models.Model):
+    complaint = models.ForeignKey(GuestComplaint, on_delete=models.CASCADE, related_name="status_history")
+    previous_status = models.CharField(max_length=16, choices=GuestComplaint.STATUS_CHOICES)
+    new_status = models.CharField(max_length=16, choices=GuestComplaint.STATUS_CHOICES)
+    changed_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="guest_complaint_status_changes")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["complaint", "changed_at"], name="guest_cmp_hist_changed_idx"),
+        ]
+
+
+class GuestComplaintEscalation(models.Model):
+    complaint = models.ForeignKey(GuestComplaint, on_delete=models.CASCADE, related_name="escalations")
+    escalation_level = models.PositiveIntegerField(default=1)
+    escalated_from = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="guest_complaint_escalated_from",
+        null=True,
+        blank=True,
+    )
+    escalated_to = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="guest_complaint_escalated_to",
+        null=True,
+        blank=True,
+    )
+    reason = models.TextField()
+    triggered_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="guest_complaint_escalation_triggers",
+        null=True,
+        blank=True,
+    )
+    triggered_at = models.DateTimeField(auto_now_add=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["complaint", "escalation_level", "is_active"],
+                name="uniq_guest_cmp_active_escalation_level",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["complaint", "is_active"], name="guest_cmp_esc_active_idx"),
+        ]
+
+
+class GuestComplaintFollowUp(TimestampedModel):
+    STATUS_PENDING = "PENDING"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_MISSED = "MISSED"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_MISSED, "Missed"),
+    ]
+
+    complaint = models.ForeignKey(GuestComplaint, on_delete=models.CASCADE, related_name="follow_ups")
+    follow_up_type = models.CharField(max_length=64)
+    scheduled_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="guest_complaint_followups",
+        null=True,
+        blank=True,
+    )
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_guest_complaint_followups")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["complaint", "status"], name="guest_cmp_followup_status_idx"),
+            models.Index(fields=["assigned_to", "status"], name="gc_fu_assignee_status_idx"),
+            models.Index(fields=["scheduled_at"], name="guest_cmp_followup_sched_idx"),
+        ]

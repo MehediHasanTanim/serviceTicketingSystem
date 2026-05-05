@@ -1,5 +1,6 @@
 from django.urls import path
 from interfaces.api import auth_views
+from interfaces.api import guest_complaint_views
 from interfaces.api import housekeeping_views
 from interfaces.api import maintenance_views
 from interfaces.api import service_order_views
@@ -49,6 +50,23 @@ urlpatterns = [
     path("service-orders/<int:order_id>/attachments", service_order_views.ServiceOrderAttachmentView.as_view(), name="service-order-attachments"),
     path("service-orders/<int:order_id>/remarks", service_order_views.ServiceOrderRemarkView.as_view(), name="service-order-remarks"),
     path("service-orders/<int:order_id>/costs", service_order_views.ServiceOrderCostUpdateView.as_view(), name="service-order-costs"),
+    path("guest-complaints", guest_complaint_views.GuestComplaintListCreateView.as_view(), name="guest-complaint-list-create"),
+    path("guest-complaints/<int:complaint_id>", guest_complaint_views.GuestComplaintDetailView.as_view(), name="guest-complaint-detail"),
+    path("guest-complaints/<int:complaint_id>/assign", guest_complaint_views.GuestComplaintAssignView.as_view(), name="guest-complaint-assign"),
+    path("guest-complaints/<int:complaint_id>/start", guest_complaint_views.GuestComplaintStartView.as_view(), name="guest-complaint-start"),
+    path("guest-complaints/<int:complaint_id>/resolve", guest_complaint_views.GuestComplaintResolveView.as_view(), name="guest-complaint-resolve"),
+    path("guest-complaints/<int:complaint_id>/confirm-resolution", guest_complaint_views.GuestComplaintConfirmResolutionView.as_view(), name="guest-complaint-confirm-resolution"),
+    path("guest-complaints/<int:complaint_id>/reopen", guest_complaint_views.GuestComplaintReopenView.as_view(), name="guest-complaint-reopen"),
+    path("guest-complaints/<int:complaint_id>/void", guest_complaint_views.GuestComplaintVoidView.as_view(), name="guest-complaint-void"),
+    path("guest-complaints/<int:complaint_id>/escalate", guest_complaint_views.GuestComplaintEscalateView.as_view(), name="guest-complaint-escalate"),
+    path("guest-complaints/escalations/run", guest_complaint_views.GuestComplaintEscalationRunView.as_view(), name="guest-complaint-escalation-run"),
+    path("guest-complaints/<int:complaint_id>/follow-ups", guest_complaint_views.GuestComplaintFollowUpListCreateView.as_view(), name="guest-complaint-followups"),
+    path("guest-complaints/follow-ups/<int:follow_up_id>/complete", guest_complaint_views.GuestComplaintFollowUpCompleteView.as_view(), name="guest-complaint-followups-complete"),
+    path("guest-complaints/analytics/summary", guest_complaint_views.GuestComplaintAnalyticsSummaryView.as_view(), name="guest-complaint-analytics-summary"),
+    path("guest-complaints/analytics/trends", guest_complaint_views.GuestComplaintAnalyticsTrendsView.as_view(), name="guest-complaint-analytics-trends"),
+    path("guest-complaints/analytics/resolution-time", guest_complaint_views.GuestComplaintAnalyticsResolutionTimeView.as_view(), name="guest-complaint-analytics-resolution-time"),
+    path("guest-complaints/analytics/satisfaction", guest_complaint_views.GuestComplaintAnalyticsSatisfactionView.as_view(), name="guest-complaint-analytics-satisfaction"),
+    path("guest-complaints/audit-logs", guest_complaint_views.GuestComplaintAuditLogView.as_view(), name="guest-complaint-audit-logs"),
     path("housekeeping/room-status", housekeeping_views.RoomStatusUpsertView.as_view(), name="housekeeping-room-status"),
     path("housekeeping/tasks", housekeeping_views.HousekeepingTaskListView.as_view(), name="housekeeping-task-list"),
     path("housekeeping/tasks/<int:task_id>", housekeeping_views.HousekeepingTaskDetailView.as_view(), name="housekeeping-task-detail"),
