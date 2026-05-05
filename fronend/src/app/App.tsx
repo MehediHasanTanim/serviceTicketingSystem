@@ -26,6 +26,15 @@ import { GuestComplaintAlertsPage } from '../modules/guest-complaints/pages/Gues
 import { GuestComplaintAnalyticsPage } from '../modules/guest-complaints/pages/GuestComplaintAnalyticsPage'
 import { GuestComplaintFollowUpsPage } from '../modules/guest-complaints/pages/GuestComplaintFollowUpsPage'
 
+import { InspectionTemplatesPage } from '../modules/inspections/pages/InspectionTemplatesPage'
+import { InspectionTemplateBuilderPage } from '../modules/inspections/pages/InspectionTemplateBuilderPage'
+import { InspectionRunsPage } from '../modules/inspections/pages/InspectionRunsPage'
+import { InspectionRunDetailPage } from '../modules/inspections/pages/InspectionRunDetailPage'
+import { InspectionExecutionPage } from '../modules/inspections/pages/InspectionExecutionPage'
+import { InspectionReportsPage } from '../modules/inspections/pages/InspectionReportsPage'
+import { NonComplianceAlertsPage } from '../modules/inspections/pages/NonComplianceAlertsPage'
+import { InspectionAuditLogsPage } from '../modules/inspections/pages/InspectionAuditLogsPage'
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
   if (!auth?.accessToken) {
@@ -90,6 +99,17 @@ export function App() {
           <Route path="/guest-complaints/alerts" element={<PrivateRoute><GuestComplaintAlertsPage /></PrivateRoute>} />
           <Route path="/guest-complaints/follow-ups" element={<PrivateRoute><GuestComplaintFollowUpsPage /></PrivateRoute>} />
           <Route path="/guest-complaints/analytics" element={<PrivateRoute><GuestComplaintAnalyticsPage /></PrivateRoute>} />
+
+          <Route path="/inspections/templates" element={<PrivateRoute><InspectionTemplatesPage /></PrivateRoute>} />
+          <Route path="/inspections/templates/new" element={<PrivateRoute><InspectionTemplateBuilderPage /></PrivateRoute>} />
+          <Route path="/inspections/templates/:id" element={<PrivateRoute><InspectionTemplateBuilderPage /></PrivateRoute>} />
+          <Route path="/inspections/templates/:id/edit" element={<PrivateRoute><InspectionTemplateBuilderPage /></PrivateRoute>} />
+          <Route path="/inspections/runs" element={<PrivateRoute><InspectionRunsPage /></PrivateRoute>} />
+          <Route path="/inspections/runs/:id" element={<PrivateRoute><InspectionRunDetailPage /></PrivateRoute>} />
+          <Route path="/inspections/runs/:id/execute" element={<PrivateRoute><InspectionExecutionPage /></PrivateRoute>} />
+          <Route path="/inspections/reports" element={<PrivateRoute><InspectionReportsPage /></PrivateRoute>} />
+          <Route path="/inspections/non-compliance-alerts" element={<PrivateRoute><NonComplianceAlertsPage /></PrivateRoute>} />
+          <Route path="/inspections/audit-logs" element={<PrivateRoute><InspectionAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

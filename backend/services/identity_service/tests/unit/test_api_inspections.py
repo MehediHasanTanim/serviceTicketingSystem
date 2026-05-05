@@ -189,3 +189,75 @@ def test_admin_override_requires_permission(db):
         format="json",
     )
     assert override_response.status_code == 403
+
+
+def test_template_patch_updates_sections_and_items(db):
+    org = create_org("Ins Template Patch Org")
+    actor = create_user(org, email="ins-template-patch@example.com")
+    _grant_all(actor)
+    client = authenticated_client(actor)
+
+    create_template = client.post(
+        reverse("inspection-template-list-create"),
+        {
+            "org_id": org.id,
+            "template_code": "TEMP-PATCH-01",
+            "name": "Patch Template",
+            "sections": [
+                {
+                    "title": "Section A",
+                    "sort_order": 1,
+                    "weight": "1.00",
+                    "items": [
+                        {"question": "Item A1", "weight": "1.00", "sort_order": 1, "is_required": True},
+                        {"question": "Item A2", "weight": "1.00", "sort_order": 2},
+                    ],
+                }
+            ],
+        },
+        format="json",
+    )
+    assert create_template.status_code == 201
+    template_id = create_template.data["id"]
+    section = create_template.data["sections"][0]
+    item_a1 = section["items"][0]
+
+    patch_template = client.patch(
+        reverse("inspection-template-detail", kwargs={"template_id": template_id}),
+        {
+            "org_id": org.id,
+            "name": "Patch Template Updated",
+            "sections": [
+                {
+                    "id": section["id"],
+                    "title": "Section A Updated",
+                    "sort_order": 2,
+                    "weight": "2.00",
+                    "items": [
+                        {
+                            "id": item_a1["id"],
+                            "question": "Item A1 Updated",
+                            "weight": "3.00",
+                            "sort_order": 2,
+                            "is_required": True,
+                            "non_compliance_trigger": True,
+                        }
+                    ],
+                },
+                {
+                    "title": "Section B New",
+                    "sort_order": 1,
+                    "weight": "1.00",
+                    "items": [{"question": "Item B1", "weight": "1.00", "sort_order": 1}],
+                },
+            ],
+        },
+        format="json",
+    )
+    assert patch_template.status_code == 200
+    assert patch_template.data["name"] == "Patch Template Updated"
+    assert len(patch_template.data["sections"]) == 2
+    questions = [item["question"] for section_payload in patch_template.data["sections"] for item in section_payload["items"]]
+    assert "Item A1 Updated" in questions
+    assert "Item B1" in questions
+    assert "Item A2" not in questions

@@ -625,6 +625,7 @@ class GuestComplaintResponseSerializer(serializers.Serializer):
 
 
 class InspectionChecklistItemCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
     question = serializers.CharField(max_length=500)
     description = serializers.CharField(required=False, allow_blank=True)
     response_type = serializers.ChoiceField(choices=["PASS_FAIL_NA"], default="PASS_FAIL_NA")
@@ -635,6 +636,7 @@ class InspectionChecklistItemCreateSerializer(serializers.Serializer):
 
 
 class InspectionChecklistSectionCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
     title = serializers.CharField(max_length=255)
     description = serializers.CharField(required=False, allow_blank=True)
     sort_order = serializers.IntegerField(required=False, default=0)
@@ -664,6 +666,7 @@ class InspectionTemplateUpdateSerializer(serializers.Serializer):
     department_id = serializers.IntegerField(required=False, allow_null=True)
     is_active = serializers.BooleanField(required=False)
     version = serializers.IntegerField(required=False, min_value=1)
+    sections = serializers.ListField(child=InspectionChecklistSectionCreateSerializer(), required=False)
 
 
 class InspectionRunCreateSerializer(serializers.Serializer):

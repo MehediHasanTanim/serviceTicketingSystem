@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -224,7 +225,66 @@ class InspectionTemplateDetailView(APIView):
             if key in serializer.validated_data:
                 setattr(template, key, serializer.validated_data[key])
         template.updated_by = request.user
-        template.save()
+        with transaction.atomic():
+            template.save()
+            if "sections" in serializer.validated_data:
+                section_payloads = serializer.validated_data["sections"]
+                existing_sections = {section.id: section for section in InspectionChecklistSection.objects.filter(template=template)}
+                payload_section_ids = set()
+
+                for section_payload in section_payloads:
+                    section_id = section_payload.get("id")
+                    if section_id and section_id in existing_sections:
+                        section = existing_sections[section_id]
+                        section.title = section_payload["title"]
+                        section.description = section_payload.get("description", "")
+                        section.sort_order = section_payload.get("sort_order", section.sort_order)
+                        section.weight = section_payload.get("weight", section.weight)
+                        section.save()
+                    else:
+                        section = InspectionChecklistSection.objects.create(
+                            template=template,
+                            title=section_payload["title"],
+                            description=section_payload.get("description", ""),
+                            sort_order=section_payload.get("sort_order", 0),
+                            weight=section_payload.get("weight", "0"),
+                        )
+                    payload_section_ids.add(section.id)
+
+                    existing_items = {item.id: item for item in InspectionChecklistItem.objects.filter(section=section)}
+                    payload_item_ids = set()
+                    for item_payload in section_payload.get("items", []):
+                        item_id = item_payload.get("id")
+                        if item_id and item_id in existing_items:
+                            item = existing_items[item_id]
+                            item.question = item_payload["question"]
+                            item.description = item_payload.get("description", "")
+                            item.response_type = item_payload.get("response_type", "PASS_FAIL_NA")
+                            item.is_required = item_payload.get("is_required", False)
+                            item.weight = item_payload.get("weight", "0")
+                            item.sort_order = item_payload.get("sort_order", 0)
+                            item.non_compliance_trigger = item_payload.get("non_compliance_trigger", False)
+                            item.save()
+                        else:
+                            item = InspectionChecklistItem.objects.create(
+                                section=section,
+                                question=item_payload["question"],
+                                description=item_payload.get("description", ""),
+                                response_type=item_payload.get("response_type", "PASS_FAIL_NA"),
+                                is_required=item_payload.get("is_required", False),
+                                weight=item_payload.get("weight", "0"),
+                                sort_order=item_payload.get("sort_order", 0),
+                                non_compliance_trigger=item_payload.get("non_compliance_trigger", False),
+                            )
+                        payload_item_ids.add(item.id)
+
+                    for existing_item_id, existing_item in existing_items.items():
+                        if existing_item_id not in payload_item_ids:
+                            existing_item.delete()
+
+                for existing_section_id, existing_section in existing_sections.items():
+                    if existing_section_id not in payload_section_ids:
+                        existing_section.delete()
         _audit(request, org_id=template.org_id, action="inspection_template_updated", entity_type="inspection_template", entity_id=str(template.id), metadata={}, property_id=template.property_id, actor=request.user)
         return Response(_template_dict(template), status=status.HTTP_200_OK)
 
