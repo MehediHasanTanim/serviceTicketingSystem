@@ -19,6 +19,12 @@ import { AssetsPage } from '../modules/maintenance/pages/AssetsPage'
 import { AssetDetailPage, AssetEditPage } from '../modules/maintenance/pages/AssetDetailPage'
 import { QRScanPage } from '../modules/maintenance/pages/QRScanPage'
 import { MaintenanceAuditLogsPage } from '../modules/maintenance/pages/MaintenanceAuditLogsPage'
+import { GuestComplaintsPage } from '../modules/guest-complaints/pages/GuestComplaintsPage'
+import { GuestComplaintFormPage } from '../modules/guest-complaints/pages/GuestComplaintFormPage'
+import { GuestComplaintDetailPage } from '../modules/guest-complaints/pages/GuestComplaintDetailPage'
+import { GuestComplaintAlertsPage } from '../modules/guest-complaints/pages/GuestComplaintAlertsPage'
+import { GuestComplaintAnalyticsPage } from '../modules/guest-complaints/pages/GuestComplaintAnalyticsPage'
+import { GuestComplaintFollowUpsPage } from '../modules/guest-complaints/pages/GuestComplaintFollowUpsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -77,6 +83,13 @@ export function App() {
           <Route path="/maintenance/assets/:id/edit" element={<PrivateRoute><AssetEditPage /></PrivateRoute>} />
           <Route path="/maintenance/qr-scan" element={<PrivateRoute><QRScanPage /></PrivateRoute>} />
           <Route path="/maintenance/audit-logs" element={<PrivateRoute><MaintenanceAuditLogsPage /></PrivateRoute>} />
+          <Route path="/guest-complaints" element={<PrivateRoute><GuestComplaintsPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/new" element={<PrivateRoute><GuestComplaintFormPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/:id" element={<PrivateRoute><GuestComplaintDetailPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/:id/edit" element={<PrivateRoute><GuestComplaintFormPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/alerts" element={<PrivateRoute><GuestComplaintAlertsPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/follow-ups" element={<PrivateRoute><GuestComplaintFollowUpsPage /></PrivateRoute>} />
+          <Route path="/guest-complaints/analytics" element={<PrivateRoute><GuestComplaintAnalyticsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
