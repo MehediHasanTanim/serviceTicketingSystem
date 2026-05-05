@@ -24,6 +24,7 @@ from interfaces.api.serializers import (
     AssetStatusUpdateSerializer,
     AssetUpdateSerializer,
     MaintenanceTaskAssignSerializer,
+    MaintenanceTaskAttachmentSerializer,
     MaintenanceTaskCreateSerializer,
     MaintenanceTaskCostsPatchSerializer,
     MaintenanceTaskLogbookCreateSerializer,
@@ -121,6 +122,25 @@ def _task_dict(task: MaintenanceTask) -> dict:
         "total_cost": task.total_cost,
         "created_at": task.created_at,
         "updated_at": task.updated_at,
+    }
+
+
+def _schedule_dict(schedule: PMSchedule) -> dict:
+    return {
+        "id": schedule.id,
+        "asset_id": schedule.asset_id,
+        "title": schedule.title,
+        "description": schedule.description,
+        "frequency_type": schedule.frequency_type,
+        "frequency_interval": schedule.frequency_interval,
+        "next_run_at": schedule.next_run_at,
+        "last_run_at": schedule.last_run_at,
+        "start_date": schedule.start_date,
+        "end_date": schedule.end_date,
+        "priority": schedule.priority,
+        "is_active": schedule.is_active,
+        "created_at": schedule.created_at,
+        "updated_at": schedule.updated_at,
     }
 
 
@@ -495,6 +515,49 @@ class MaintenanceTaskCostsView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         return Response(_task_dict(task), status=status.HTTP_200_OK)
 
+class MaintenanceTaskAttachmentView(APIView):
+    task_service = MaintenanceService()
+
+    def get(self, request, task_id: int):
+        if not _has_permission(request.user, "maintenance.tasks.view"):
+            return Response({"detail": "Permission required: maintenance.tasks.view"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id", "0"))
+        try:
+            task = self.task_service.get_task(task_id=task_id, org_id=org_id)
+        except MaintenanceNotFoundError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        rows = task.attachments.order_by("-uploaded_at")
+        return Response({
+            "count": rows.count(),
+            "results": [{
+                "id": row.id,
+                "file_name": row.file_name,
+                "storage_key": row.storage_key,
+                "uploaded_by": row.uploaded_by_id,
+                "uploaded_at": row.uploaded_at,
+            } for row in rows],
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, task_id: int):
+        if not _has_permission(request.user, "maintenance.tasks.manage"):
+            return Response({"detail": "Permission required: maintenance.tasks.manage"}, status=status.HTTP_403_FORBIDDEN)
+        serializer = MaintenanceTaskAttachmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        org_id = int(request.data.get("org_id", "0"))
+        try:
+            task = self.task_service.get_task(task_id=task_id, org_id=org_id)
+        except MaintenanceNotFoundError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        attachment = task.attachments.create(uploaded_by=request.user, **serializer.validated_data)
+        _audit(request, org_id=task.org_id, action="maintenance_task_attachment_added", entity_type="maintenance_task", entity_id=str(task.id), metadata={"attachment_id": attachment.id, "file_name": attachment.file_name}, property_id=task.property_id, actor=request.user)
+        return Response({
+            "id": attachment.id,
+            "file_name": attachment.file_name,
+            "storage_key": attachment.storage_key,
+            "uploaded_by": attachment.uploaded_by_id,
+            "uploaded_at": attachment.uploaded_at,
+        }, status=status.HTTP_201_CREATED)
+
 
 class PMScheduleListCreateView(APIView):
     repo = PMScheduleRepository()
@@ -512,9 +575,42 @@ class PMScheduleListCreateView(APIView):
         _audit(request, org_id=data["org_id"], action="pm_schedule_created", entity_type="pm_schedule", entity_id=str(schedule.id), metadata={"asset_id": schedule.asset_id}, property_id=asset.property_id, actor=request.user)
         return Response({"id": schedule.id}, status=status.HTTP_201_CREATED)
 
+    def get(self, request):
+        if not _has_permission(request.user, "maintenance.pm.manage"):
+            return Response({"detail": "Permission required: maintenance.pm.manage"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id", "0"))
+        if not org_id:
+            return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        qs = PMSchedule.objects.select_related("asset").filter(asset__org_id=org_id)
+        if request.query_params.get("asset"):
+            qs = qs.filter(asset_id=int(request.query_params["asset"]))
+        if request.query_params.get("property"):
+            qs = qs.filter(asset__property_id=int(request.query_params["property"]))
+        if request.query_params.get("status"):
+            status_filter = request.query_params.get("status", "").lower()
+            if status_filter in {"active", "inactive"}:
+                qs = qs.filter(is_active=(status_filter == "active"))
+        if request.query_params.get("frequency_type"):
+            qs = qs.filter(frequency_type=request.query_params["frequency_type"])
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), 100)
+        total = qs.count()
+        offset = (page - 1) * page_size
+        rows = qs.order_by("-next_run_at")[offset:offset + page_size]
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [_schedule_dict(row) for row in rows]}, status=status.HTTP_200_OK)
+
 
 class PMScheduleDetailView(APIView):
     repo = PMScheduleRepository()
+
+    def get(self, request, schedule_id: int):
+        if not _has_permission(request.user, "maintenance.pm.manage"):
+            return Response({"detail": "Permission required: maintenance.pm.manage"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id", "0"))
+        schedule = PMSchedule.objects.select_related("asset").filter(id=schedule_id, asset__org_id=org_id).first()
+        if not schedule:
+            return Response({"detail": "Schedule not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(_schedule_dict(schedule), status=status.HTTP_200_OK)
 
     def patch(self, request, schedule_id: int):
         if not _has_permission(request.user, "maintenance.pm.manage"):

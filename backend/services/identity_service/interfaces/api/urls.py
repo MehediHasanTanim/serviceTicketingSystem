@@ -82,6 +82,7 @@ urlpatterns = [
     path("maintenance/tasks/<int:task_id>/void", maintenance_views.MaintenanceTaskVoidView.as_view(), name="maintenance-task-void"),
     path("maintenance/tasks/<int:task_id>/logbook", maintenance_views.MaintenanceTaskLogbookView.as_view(), name="maintenance-task-logbook"),
     path("maintenance/tasks/<int:task_id>/costs", maintenance_views.MaintenanceTaskCostsView.as_view(), name="maintenance-task-costs"),
+    path("maintenance/tasks/<int:task_id>/attachments", maintenance_views.MaintenanceTaskAttachmentView.as_view(), name="maintenance-task-attachments"),
     path("maintenance/pm-schedules", maintenance_views.PMScheduleListCreateView.as_view(), name="maintenance-pm-schedule-list-create"),
     path("maintenance/pm-schedules/<int:schedule_id>", maintenance_views.PMScheduleDetailView.as_view(), name="maintenance-pm-schedule-detail"),
     path("maintenance/pm-scheduler/run", maintenance_views.PMSchedulerRunView.as_view(), name="maintenance-pm-scheduler-run"),

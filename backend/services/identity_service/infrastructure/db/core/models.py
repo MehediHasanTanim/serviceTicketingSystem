@@ -784,6 +784,14 @@ class MaintenanceLaborEntry(models.Model):
     total_labor_cost = models.DecimalField(max_digits=12, decimal_places=2)
 
 
+class MaintenanceTaskAttachment(models.Model):
+    maintenance_task = models.ForeignKey(MaintenanceTask, on_delete=models.CASCADE, related_name="attachments")
+    file_name = models.CharField(max_length=255)
+    storage_key = models.CharField(max_length=512)
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="maintenance_task_uploads")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
 class PasswordResetToken(models.Model):
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")

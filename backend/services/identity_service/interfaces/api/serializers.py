@@ -437,6 +437,10 @@ class MaintenanceTaskLogbookCreateSerializer(serializers.Serializer):
 class MaintenanceTaskCostsPatchSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
 
+class MaintenanceTaskAttachmentSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=255)
+    storage_key = serializers.CharField(max_length=512)
+
 
 class PMScheduleCreateSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
