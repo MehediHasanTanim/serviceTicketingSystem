@@ -2,6 +2,7 @@ from django.urls import path
 from interfaces.api import auth_views
 from interfaces.api import guest_complaint_views
 from interfaces.api import housekeeping_views
+from interfaces.api import inspection_views
 from interfaces.api import maintenance_views
 from interfaces.api import service_order_views
 
@@ -104,4 +105,23 @@ urlpatterns = [
     path("maintenance/pm-schedules", maintenance_views.PMScheduleListCreateView.as_view(), name="maintenance-pm-schedule-list-create"),
     path("maintenance/pm-schedules/<int:schedule_id>", maintenance_views.PMScheduleDetailView.as_view(), name="maintenance-pm-schedule-detail"),
     path("maintenance/pm-scheduler/run", maintenance_views.PMSchedulerRunView.as_view(), name="maintenance-pm-scheduler-run"),
+    path("inspections/templates", inspection_views.InspectionTemplateListCreateView.as_view(), name="inspection-template-list-create"),
+    path("inspections/templates/<int:template_id>", inspection_views.InspectionTemplateDetailView.as_view(), name="inspection-template-detail"),
+    path("inspections/templates/<int:template_id>/activate", inspection_views.InspectionTemplateActivationView.as_view(), name="inspection-template-activate"),
+    path("inspections/templates/<int:template_id>/deactivate", inspection_views.InspectionTemplateDeactivateView.as_view(), name="inspection-template-deactivate"),
+    path("inspections/runs", inspection_views.InspectionRunListCreateView.as_view(), name="inspection-run-list-create"),
+    path("inspections/runs/<int:run_id>", inspection_views.InspectionRunDetailView.as_view(), name="inspection-run-detail"),
+    path("inspections/runs/<int:run_id>/start", inspection_views.InspectionRunStartView.as_view(), name="inspection-run-start"),
+    path("inspections/runs/<int:run_id>/responses", inspection_views.InspectionRunResponseView.as_view(), name="inspection-run-responses"),
+    path("inspections/runs/<int:run_id>/responses/<int:response_id>", inspection_views.InspectionRunResponseDetailView.as_view(), name="inspection-run-response-detail"),
+    path("inspections/runs/<int:run_id>/complete", inspection_views.InspectionRunCompleteView.as_view(), name="inspection-run-complete"),
+    path("inspections/runs/<int:run_id>/cancel", inspection_views.InspectionRunCancelView.as_view(), name="inspection-run-cancel"),
+    path("inspections/runs/<int:run_id>/void", inspection_views.InspectionRunVoidView.as_view(), name="inspection-run-void"),
+    path("inspections/runs/<int:run_id>/history", inspection_views.InspectionRunHistoryView.as_view(), name="inspection-run-history"),
+    path("inspections/reports/summary", inspection_views.InspectionSummaryReportView.as_view(), name="inspection-report-summary"),
+    path("inspections/reports/trends", inspection_views.InspectionTrendReportView.as_view(), name="inspection-report-trends"),
+    path("inspections/reports/non-compliance", inspection_views.InspectionNonComplianceReportView.as_view(), name="inspection-report-non-compliance"),
+    path("inspections/non-compliance-alerts", inspection_views.NonComplianceAlertListView.as_view(), name="inspection-alert-list"),
+    path("inspections/non-compliance-alerts/<int:alert_id>/acknowledge", inspection_views.NonComplianceAlertActionView.as_view(), name="inspection-alert-ack"),
+    path("inspections/non-compliance-alerts/<int:alert_id>/resolve", inspection_views.NonComplianceAlertResolveView.as_view(), name="inspection-alert-resolve"),
 ]

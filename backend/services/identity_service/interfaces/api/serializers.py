@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 
@@ -620,3 +622,79 @@ class GuestComplaintResponseSerializer(serializers.Serializer):
     updated_by = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+
+class InspectionChecklistItemCreateSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=500)
+    description = serializers.CharField(required=False, allow_blank=True)
+    response_type = serializers.ChoiceField(choices=["PASS_FAIL_NA"], default="PASS_FAIL_NA")
+    is_required = serializers.BooleanField(required=False, default=False)
+    weight = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default="0.00", min_value=Decimal("0"))
+    sort_order = serializers.IntegerField(required=False, default=0)
+    non_compliance_trigger = serializers.BooleanField(required=False, default=False)
+
+
+class InspectionChecklistSectionCreateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    sort_order = serializers.IntegerField(required=False, default=0)
+    weight = serializers.DecimalField(max_digits=8, decimal_places=2, required=False, default="0.00", min_value=Decimal("0"))
+    items = serializers.ListField(child=InspectionChecklistItemCreateSerializer(), required=False)
+
+
+class InspectionTemplateCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    template_code = serializers.CharField(max_length=64)
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    is_active = serializers.BooleanField(required=False, default=True)
+    version = serializers.IntegerField(required=False, min_value=1, default=1)
+    sections = serializers.ListField(child=InspectionChecklistSectionCreateSerializer(), required=False)
+
+
+class InspectionTemplateUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    is_active = serializers.BooleanField(required=False)
+    version = serializers.IntegerField(required=False, min_value=1)
+
+
+class InspectionRunCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    template_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    inspected_by = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class InspectionResponseSubmitSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    checklist_item_id = serializers.IntegerField()
+    response = serializers.ChoiceField(choices=["PASS", "FAIL", "NA"])
+    comment = serializers.CharField(required=False, allow_blank=True)
+    evidence_attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    admin_override = serializers.BooleanField(required=False, default=False)
+
+
+class InspectionRunUpdateResponseSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    response = serializers.ChoiceField(choices=["PASS", "FAIL", "NA"], required=False)
+    comment = serializers.CharField(required=False, allow_blank=True)
+    evidence_attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    admin_override = serializers.BooleanField(required=False, default=False)
+
+
+class InspectionAlertActionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()

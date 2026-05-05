@@ -1056,3 +1056,211 @@ class GuestComplaintFollowUp(TimestampedModel):
             models.Index(fields=["assigned_to", "status"], name="gc_fu_assignee_status_idx"),
             models.Index(fields=["scheduled_at"], name="guest_cmp_followup_sched_idx"),
         ]
+
+
+class InspectionTemplate(TimestampedModel):
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="inspection_templates")
+    template_code = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="inspection_templates", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="inspection_templates", null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_inspection_templates")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_inspection_templates")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "is_active"], name="insp_tpl_org_active_idx"),
+            models.Index(fields=["org", "category"], name="insp_tpl_org_category_idx"),
+        ]
+
+
+class InspectionChecklistSection(TimestampedModel):
+    template = models.ForeignKey(InspectionTemplate, on_delete=models.CASCADE, related_name="sections")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    sort_order = models.IntegerField(default=0)
+    weight = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(check=models.Q(weight__gte=0), name="insp_sec_weight_nonneg"),
+        ]
+        indexes = [
+            models.Index(fields=["template", "sort_order"], name="insp_section_sort_idx"),
+        ]
+
+
+class InspectionChecklistItem(TimestampedModel):
+    RESPONSE_TYPE_PASS_FAIL_NA = "PASS_FAIL_NA"
+    RESPONSE_TYPE_CHOICES = [
+        (RESPONSE_TYPE_PASS_FAIL_NA, "Pass/Fail/NA"),
+    ]
+
+    section = models.ForeignKey(InspectionChecklistSection, on_delete=models.CASCADE, related_name="items")
+    question = models.CharField(max_length=500)
+    description = models.TextField(blank=True)
+    response_type = models.CharField(max_length=32, choices=RESPONSE_TYPE_CHOICES, default=RESPONSE_TYPE_PASS_FAIL_NA)
+    is_required = models.BooleanField(default=False)
+    weight = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    sort_order = models.IntegerField(default=0)
+    non_compliance_trigger = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(check=models.Q(weight__gte=0), name="insp_item_weight_non_negative"),
+        ]
+        indexes = [
+            models.Index(fields=["section", "sort_order"], name="insp_item_sort_idx"),
+        ]
+
+
+class InspectionRun(TimestampedModel):
+    STATUS_SCHEDULED = "SCHEDULED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    RESULT_PASS = "PASS"
+    RESULT_FAIL = "FAIL"
+    RESULT_PARTIAL = "PARTIAL"
+    RESULT_NOT_APPLICABLE = "NOT_APPLICABLE"
+    RESULT_CHOICES = [
+        (RESULT_PASS, "Pass"),
+        (RESULT_FAIL, "Fail"),
+        (RESULT_PARTIAL, "Partial"),
+        (RESULT_NOT_APPLICABLE, "Not Applicable"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="inspection_runs")
+    inspection_number = models.CharField(max_length=64, unique=True)
+    template = models.ForeignKey(InspectionTemplate, on_delete=models.PROTECT, related_name="runs")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="inspection_runs", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="inspection_runs", null=True, blank=True)
+    location_id = models.BigIntegerField(null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="inspection_runs", null=True, blank=True)
+    asset = models.ForeignKey(Asset, on_delete=models.PROTECT, related_name="inspection_runs", null=True, blank=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="assigned_inspection_runs", null=True, blank=True)
+    inspected_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="inspected_runs", null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_SCHEDULED)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    final_score = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    result = models.CharField(max_length=32, choices=RESULT_CHOICES, default=RESULT_PARTIAL)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_inspection_runs")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="insp_run_org_status_idx"),
+            models.Index(fields=["org", "result"], name="insp_run_org_result_idx"),
+            models.Index(fields=["template", "created_at"], name="insp_run_template_created_idx"),
+            models.Index(fields=["property", "created_at"], name="insp_run_property_created_idx"),
+            models.Index(fields=["room", "created_at"], name="insp_run_room_created_idx"),
+            models.Index(fields=["asset", "created_at"], name="insp_run_asset_created_idx"),
+        ]
+
+
+class InspectionStepResponse(models.Model):
+    RESPONSE_PASS = "PASS"
+    RESPONSE_FAIL = "FAIL"
+    RESPONSE_NA = "NA"
+    RESPONSE_CHOICES = [
+        (RESPONSE_PASS, "Pass"),
+        (RESPONSE_FAIL, "Fail"),
+        (RESPONSE_NA, "Not Applicable"),
+    ]
+
+    inspection_run = models.ForeignKey(InspectionRun, on_delete=models.CASCADE, related_name="responses")
+    checklist_item = models.ForeignKey(InspectionChecklistItem, on_delete=models.PROTECT, related_name="responses")
+    response = models.CharField(max_length=8, choices=RESPONSE_CHOICES)
+    score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    comment = models.TextField(blank=True)
+    evidence_attachment_id = models.BigIntegerField(null=True, blank=True)
+    responded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="inspection_responses")
+    responded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["inspection_run", "checklist_item"], name="uniq_run_item_response"),
+        ]
+        indexes = [
+            models.Index(fields=["inspection_run", "responded_at"], name="insp_resp_run_time_idx"),
+        ]
+
+
+class InspectionRunHistory(models.Model):
+    inspection_run = models.ForeignKey(InspectionRun, on_delete=models.CASCADE, related_name="history")
+    action = models.CharField(max_length=255)
+    actor = models.ForeignKey(User, on_delete=models.PROTECT, related_name="inspection_run_history", null=True, blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["inspection_run", "created_at"], name="insp_history_run_created_idx"),
+        ]
+
+
+class NonComplianceAlert(models.Model):
+    ALERT_ITEM_FAIL = "ITEM_FAIL"
+    ALERT_FINAL_FAIL = "FINAL_FAIL"
+    ALERT_SCORE_BELOW_THRESHOLD = "SCORE_BELOW_THRESHOLD"
+    ALERT_REPEAT_FAILURE = "REPEAT_FAILURE"
+    ALERT_TYPE_CHOICES = [
+        (ALERT_ITEM_FAIL, "Item Fail"),
+        (ALERT_FINAL_FAIL, "Final Fail"),
+        (ALERT_SCORE_BELOW_THRESHOLD, "Score Below Threshold"),
+        (ALERT_REPEAT_FAILURE, "Repeat Failure"),
+    ]
+
+    SEVERITY_LOW = "LOW"
+    SEVERITY_MEDIUM = "MEDIUM"
+    SEVERITY_HIGH = "HIGH"
+    SEVERITY_CRITICAL = "CRITICAL"
+    SEVERITY_CHOICES = [
+        (SEVERITY_LOW, "Low"),
+        (SEVERITY_MEDIUM, "Medium"),
+        (SEVERITY_HIGH, "High"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_OPEN = "OPEN"
+    STATUS_ACKNOWLEDGED = "ACKNOWLEDGED"
+    STATUS_RESOLVED = "RESOLVED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_ACKNOWLEDGED, "Acknowledged"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="non_compliance_alerts")
+    inspection_run = models.ForeignKey(InspectionRun, on_delete=models.CASCADE, related_name="non_compliance_alerts")
+    checklist_item = models.ForeignKey(InspectionChecklistItem, on_delete=models.PROTECT, related_name="non_compliance_alerts", null=True, blank=True)
+    alert_type = models.CharField(max_length=32, choices=ALERT_TYPE_CHOICES)
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default=SEVERITY_MEDIUM)
+    message = models.TextField()
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="non_compliance_alerts", null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="nca_org_status_idx"),
+            models.Index(fields=["inspection_run", "status"], name="nca_run_status_idx"),
+            models.Index(fields=["alert_type", "status"], name="nca_type_status_idx"),
+        ]
