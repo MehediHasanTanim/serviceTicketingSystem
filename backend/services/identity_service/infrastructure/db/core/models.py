@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class TimestampedModel(models.Model):
@@ -1264,3 +1265,299 @@ class NonComplianceAlert(models.Model):
             models.Index(fields=["inspection_run", "status"], name="nca_run_status_idx"),
             models.Index(fields=["alert_type", "status"], name="nca_type_status_idx"),
         ]
+
+
+class ComplianceRequirement(TimestampedModel):
+    FREQ_DAILY = "DAILY"
+    FREQ_WEEKLY = "WEEKLY"
+    FREQ_MONTHLY = "MONTHLY"
+    FREQ_QUARTERLY = "QUARTERLY"
+    FREQ_YEARLY = "YEARLY"
+    FREQ_CUSTOM = "CUSTOM"
+    FREQ_CHOICES = [
+        (FREQ_DAILY, "Daily"),
+        (FREQ_WEEKLY, "Weekly"),
+        (FREQ_MONTHLY, "Monthly"),
+        (FREQ_QUARTERLY, "Quarterly"),
+        (FREQ_YEARLY, "Yearly"),
+        (FREQ_CUSTOM, "Custom"),
+    ]
+
+    PRIORITY_LOW = "LOW"
+    PRIORITY_MEDIUM = "MEDIUM"
+    PRIORITY_HIGH = "HIGH"
+    PRIORITY_CRITICAL = "CRITICAL"
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW, "Low"),
+        (PRIORITY_MEDIUM, "Medium"),
+        (PRIORITY_HIGH, "High"),
+        (PRIORITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_INACTIVE = "INACTIVE"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="compliance_requirements")
+    requirement_code = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    regulation_reference = models.CharField(max_length=255, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="compliance_requirements", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="compliance_requirements", null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_compliance_requirements", null=True, blank=True)
+    frequency_type = models.CharField(max_length=16, choices=FREQ_CHOICES, default=FREQ_MONTHLY)
+    frequency_interval = models.PositiveIntegerField(default=1)
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    effective_date = models.DateField(null=True, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    next_run_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_compliance_requirements")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_compliance_requirements")
+
+
+class ComplianceChecklistItem(TimestampedModel):
+    requirement = models.ForeignKey(ComplianceRequirement, on_delete=models.CASCADE, related_name="checklist_items")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_required = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=0)
+    evidence_required = models.BooleanField(default=False)
+
+
+class ComplianceCheck(TimestampedModel):
+    STATUS_PENDING = "PENDING"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_COMPLIANT = "COMPLIANT"
+    STATUS_NON_COMPLIANT = "NON_COMPLIANT"
+    STATUS_OVERDUE = "OVERDUE"
+    STATUS_WAIVED = "WAIVED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_COMPLIANT, "Compliant"),
+        (STATUS_NON_COMPLIANT, "Non Compliant"),
+        (STATUS_OVERDUE, "Overdue"),
+        (STATUS_WAIVED, "Waived"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    requirement = models.ForeignKey(ComplianceRequirement, on_delete=models.CASCADE, related_name="checks")
+    due_at = models.DateTimeField()
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="compliance_checks", null=True, blank=True)
+    completed_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="completed_compliance_checks", null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    evidence_attachment_id = models.BigIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    next_run_at = models.DateTimeField(null=True, blank=True)
+
+
+class RiskRegisterItem(TimestampedModel):
+    LEVEL_LOW = "LOW"
+    LEVEL_MEDIUM = "MEDIUM"
+    LEVEL_HIGH = "HIGH"
+    LEVEL_CRITICAL = "CRITICAL"
+    LEVEL_CHOICES = [
+        (LEVEL_LOW, "Low"),
+        (LEVEL_MEDIUM, "Medium"),
+        (LEVEL_HIGH, "High"),
+        (LEVEL_CRITICAL, "Critical"),
+    ]
+
+    STATUS_OPEN = "OPEN"
+    STATUS_MITIGATING = "MITIGATING"
+    STATUS_MONITORING = "MONITORING"
+    STATUS_ACCEPTED = "ACCEPTED"
+    STATUS_CLOSED = "CLOSED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_MITIGATING, "Mitigating"),
+        (STATUS_MONITORING, "Monitoring"),
+        (STATUS_ACCEPTED, "Accepted"),
+        (STATUS_CLOSED, "Closed"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="risk_register_items")
+    risk_code = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="risk_register_items", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="risk_register_items", null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_risks", null=True, blank=True)
+    likelihood = models.PositiveSmallIntegerField()
+    impact = models.PositiveSmallIntegerField()
+    inherent_score = models.PositiveSmallIntegerField()
+    residual_score = models.PositiveSmallIntegerField(default=0)
+    risk_level = models.CharField(max_length=16, choices=LEVEL_CHOICES, default=LEVEL_LOW)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    identified_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_risks")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_risks")
+
+
+class RiskMitigationAction(TimestampedModel):
+    STATUS_PENDING = "PENDING"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_OVERDUE = "OVERDUE"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_OVERDUE, "Overdue"),
+    ]
+
+    risk = models.ForeignKey(RiskRegisterItem, on_delete=models.CASCADE, related_name="mitigation_actions")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="risk_mitigation_actions", null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    due_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    effectiveness_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+
+class LegalContractRecord(TimestampedModel):
+    TYPE_LEGAL = "LEGAL"
+    TYPE_CONTRACT = "CONTRACT"
+    TYPE_LICENSE = "LICENSE"
+    TYPE_PERMIT = "PERMIT"
+    TYPE_INSURANCE = "INSURANCE"
+    TYPE_AUDIT = "AUDIT"
+    TYPE_CHOICES = [
+        (TYPE_LEGAL, "Legal"),
+        (TYPE_CONTRACT, "Contract"),
+        (TYPE_LICENSE, "License"),
+        (TYPE_PERMIT, "Permit"),
+        (TYPE_INSURANCE, "Insurance"),
+        (TYPE_AUDIT, "Audit"),
+    ]
+
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_EXPIRED = "EXPIRED"
+    STATUS_RENEWAL_DUE = "RENEWAL_DUE"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_EXPIRED, "Expired"),
+        (STATUS_RENEWAL_DUE, "Renewal Due"),
+        (STATUS_ARCHIVED, "Archived"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="legal_contract_records")
+    record_code = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    record_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="legal_contract_records", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="legal_contract_records", null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_legal_records", null=True, blank=True)
+    vendor_name = models.CharField(max_length=255, blank=True)
+    effective_date = models.DateField(null=True, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    renewal_due_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    attachment_id = models.BigIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_legal_records")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_legal_records")
+
+
+class AuditRecord(TimestampedModel):
+    RESULT_PASS = "PASS"
+    RESULT_FAIL = "FAIL"
+    RESULT_PARTIAL = "PARTIAL"
+    RESULT_OBSERVATION = "OBSERVATION"
+    RESULT_CHOICES = [
+        (RESULT_PASS, "Pass"),
+        (RESULT_FAIL, "Fail"),
+        (RESULT_PARTIAL, "Partial"),
+        (RESULT_OBSERVATION, "Observation"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="audit_records")
+    audit_code = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    scope = models.TextField(blank=True)
+    auditor = models.CharField(max_length=255, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="audit_records", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="audit_records", null=True, blank=True)
+    audit_date = models.DateField(null=True, blank=True)
+    result = models.CharField(max_length=16, choices=RESULT_CHOICES)
+    score = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    findings_summary = models.TextField(blank=True)
+    corrective_actions_required = models.BooleanField(default=False)
+    attachment_id = models.BigIntegerField(null=True, blank=True)
+    related_risk = models.ForeignKey(RiskRegisterItem, on_delete=models.SET_NULL, related_name="audit_records", null=True, blank=True)
+    related_check = models.ForeignKey(ComplianceCheck, on_delete=models.SET_NULL, related_name="audit_records", null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_audit_records")
+
+
+class RiskComplianceAlert(models.Model):
+    TYPE_COMPLIANCE_OVERDUE = "COMPLIANCE_OVERDUE"
+    TYPE_NON_COMPLIANT = "NON_COMPLIANT_CHECK"
+    TYPE_CRITICAL_RISK = "CRITICAL_RISK"
+    TYPE_MITIGATION_OVERDUE = "MITIGATION_OVERDUE"
+    TYPE_LEGAL_EXPIRY = "LEGAL_EXPIRY"
+    TYPE_AUDIT_CORRECTIVE = "AUDIT_CORRECTIVE_ACTION"
+    TYPE_CHOICES = [
+        (TYPE_COMPLIANCE_OVERDUE, "Compliance Overdue"),
+        (TYPE_NON_COMPLIANT, "Non Compliant Check"),
+        (TYPE_CRITICAL_RISK, "Critical Risk"),
+        (TYPE_MITIGATION_OVERDUE, "Mitigation Overdue"),
+        (TYPE_LEGAL_EXPIRY, "Legal Expiry"),
+        (TYPE_AUDIT_CORRECTIVE, "Audit Corrective Action"),
+    ]
+
+    SEVERITY_LOW = "LOW"
+    SEVERITY_MEDIUM = "MEDIUM"
+    SEVERITY_HIGH = "HIGH"
+    SEVERITY_CRITICAL = "CRITICAL"
+    SEVERITY_CHOICES = [
+        (SEVERITY_LOW, "Low"),
+        (SEVERITY_MEDIUM, "Medium"),
+        (SEVERITY_HIGH, "High"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_OPEN = "OPEN"
+    STATUS_ACKNOWLEDGED = "ACKNOWLEDGED"
+    STATUS_RESOLVED = "RESOLVED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_ACKNOWLEDGED, "Acknowledged"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="risk_compliance_alerts")
+    alert_type = models.CharField(max_length=64, choices=TYPE_CHOICES)
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES)
+    entity_type = models.CharField(max_length=64)
+    entity_id = models.CharField(max_length=64)
+    message = models.TextField()
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="risk_compliance_alerts", null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

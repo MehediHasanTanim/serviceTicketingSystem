@@ -5,6 +5,7 @@ from interfaces.api import housekeeping_views
 from interfaces.api import inspection_views
 from interfaces.api import maintenance_views
 from interfaces.api import service_order_views
+from interfaces.api import risk_compliance_views
 
 urlpatterns = [
     path("me", auth_views.MeView.as_view(), name="auth-me"),
@@ -124,4 +125,31 @@ urlpatterns = [
     path("inspections/non-compliance-alerts", inspection_views.NonComplianceAlertListView.as_view(), name="inspection-alert-list"),
     path("inspections/non-compliance-alerts/<int:alert_id>/acknowledge", inspection_views.NonComplianceAlertActionView.as_view(), name="inspection-alert-ack"),
     path("inspections/non-compliance-alerts/<int:alert_id>/resolve", inspection_views.NonComplianceAlertResolveView.as_view(), name="inspection-alert-resolve"),
+    path("risk-compliance/requirements", risk_compliance_views.ComplianceRequirementListCreateView.as_view(), name="risk-compliance-requirements"),
+    path("risk-compliance/requirements/<int:id>", risk_compliance_views.ComplianceRequirementDetailView.as_view(), name="risk-compliance-requirement-detail"),
+    path("risk-compliance/requirements/<int:id>/activate", risk_compliance_views.ComplianceRequirementActivateView.as_view(), name="risk-compliance-requirement-activate"),
+    path("risk-compliance/requirements/<int:id>/deactivate", risk_compliance_views.ComplianceRequirementDeactivateView.as_view(), name="risk-compliance-requirement-deactivate"),
+    path("risk-compliance/compliance-schedules/run", risk_compliance_views.ComplianceScheduleRunView.as_view(), name="risk-compliance-schedule-run"),
+    path("risk-compliance/checks", risk_compliance_views.ComplianceCheckListView.as_view(), name="risk-compliance-checks"),
+    path("risk-compliance/checks/<int:id>", risk_compliance_views.ComplianceCheckDetailView.as_view(), name="risk-compliance-check-detail"),
+    path("risk-compliance/checks/<int:id>/submit", risk_compliance_views.ComplianceCheckSubmitView.as_view(), name="risk-compliance-check-submit"),
+    path("risk-compliance/checks/<int:id>/waive", risk_compliance_views.ComplianceCheckWaiveView.as_view(), name="risk-compliance-check-waive"),
+    path("risk-compliance/checks/overdue-check", risk_compliance_views.ComplianceCheckMarkOverdueView.as_view(), name="risk-compliance-check-overdue"),
+    path("risk-compliance/risks", risk_compliance_views.RiskListCreateView.as_view(), name="risk-compliance-risks"),
+    path("risk-compliance/risks/<int:id>", risk_compliance_views.RiskDetailView.as_view(), name="risk-compliance-risk-detail"),
+    path("risk-compliance/risks/<int:id>/mitigations", risk_compliance_views.RiskMitigationListCreateView.as_view(), name="risk-compliance-risk-mitigations"),
+    path("risk-compliance/mitigations/<int:id>/complete", risk_compliance_views.RiskMitigationCompleteView.as_view(), name="risk-compliance-mitigation-complete"),
+    path("risk-compliance/legal-records", risk_compliance_views.LegalRecordListCreateView.as_view(), name="risk-compliance-legal-records"),
+    path("risk-compliance/legal-records/<int:id>", risk_compliance_views.LegalRecordDetailView.as_view(), name="risk-compliance-legal-record-detail"),
+    path("risk-compliance/audit-records", risk_compliance_views.AuditRecordListCreateView.as_view(), name="risk-compliance-audit-records"),
+    path("risk-compliance/audit-records/<int:id>", risk_compliance_views.AuditRecordDetailView.as_view(), name="risk-compliance-audit-record-detail"),
+    path("risk-compliance/dashboard/summary", risk_compliance_views.DashboardSummaryView.as_view(), name="risk-compliance-dashboard-summary"),
+    path("risk-compliance/dashboard/compliance-status", risk_compliance_views.DashboardComplianceStatusView.as_view(), name="risk-compliance-dashboard-compliance-status"),
+    path("risk-compliance/dashboard/risk-summary", risk_compliance_views.DashboardRiskSummaryView.as_view(), name="risk-compliance-dashboard-risk-summary"),
+    path("risk-compliance/dashboard/legal-expiry", risk_compliance_views.DashboardLegalExpiryView.as_view(), name="risk-compliance-dashboard-legal-expiry"),
+    path("risk-compliance/alerts", risk_compliance_views.AlertListView.as_view(), name="risk-compliance-alerts"),
+    path("risk-compliance/alerts/<int:id>/acknowledge", risk_compliance_views.AlertAcknowledgeView.as_view(), name="risk-compliance-alert-ack"),
+    path("risk-compliance/alerts/<int:id>/resolve", risk_compliance_views.AlertResolveView.as_view(), name="risk-compliance-alert-resolve"),
+    path("risk-compliance/audit-logs", risk_compliance_views.RiskComplianceAuditLogView.as_view(), name="risk-compliance-audit-logs"),
+
 ]

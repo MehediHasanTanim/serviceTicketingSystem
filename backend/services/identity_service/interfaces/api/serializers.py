@@ -701,3 +701,159 @@ class InspectionRunUpdateResponseSerializer(serializers.Serializer):
 
 class InspectionAlertActionSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
+
+
+class ComplianceChecklistItemInputSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    is_required = serializers.BooleanField(required=False, default=True)
+    sort_order = serializers.IntegerField(required=False, default=0)
+    evidence_required = serializers.BooleanField(required=False, default=False)
+
+
+class ComplianceRequirementCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    requirement_code = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(required=False, allow_blank=True)
+    regulation_reference = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"])
+    frequency_interval = serializers.IntegerField(required=False, min_value=1, default=1)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], default="MEDIUM")
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "ARCHIVED"], default="ACTIVE")
+    effective_date = serializers.DateField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(required=False, allow_null=True)
+    checklist_items = ComplianceChecklistItemInputSerializer(many=True, required=False)
+
+
+class ComplianceRequirementUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(required=False, allow_blank=True)
+    regulation_reference = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"], required=False)
+    frequency_interval = serializers.IntegerField(required=False, min_value=1)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False)
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "ARCHIVED"], required=False)
+    effective_date = serializers.DateField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(required=False, allow_null=True)
+    checklist_items = ComplianceChecklistItemInputSerializer(many=True, required=False)
+
+
+class ComplianceCheckSubmitSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    compliant = serializers.BooleanField()
+    evidence_attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class OrgOnlySerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+
+
+class RiskCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    risk_code = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    likelihood = serializers.IntegerField(min_value=1, max_value=5)
+    impact = serializers.IntegerField(min_value=1, max_value=5)
+    status = serializers.ChoiceField(choices=["OPEN", "MITIGATING", "MONITORING", "ACCEPTED", "CLOSED", "VOID"], default="OPEN")
+    identified_at = serializers.DateTimeField(required=False)
+    reviewed_at = serializers.DateTimeField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class RiskUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    likelihood = serializers.IntegerField(min_value=1, max_value=5, required=False)
+    impact = serializers.IntegerField(min_value=1, max_value=5, required=False)
+    status = serializers.ChoiceField(choices=["OPEN", "MITIGATING", "MONITORING", "ACCEPTED", "CLOSED", "VOID"], required=False)
+    reviewed_at = serializers.DateTimeField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class MitigationCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    status = serializers.ChoiceField(choices=["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED", "OVERDUE"], default="PENDING")
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    effectiveness_score = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class MitigationCompleteSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    effectiveness_score = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class LegalRecordCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    record_code = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    record_type = serializers.ChoiceField(choices=["LEGAL", "CONTRACT", "LICENSE", "PERMIT", "INSURANCE", "AUDIT"])
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    vendor_name = serializers.CharField(required=False, allow_blank=True)
+    effective_date = serializers.DateField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(required=False, allow_null=True)
+    renewal_due_at = serializers.DateTimeField(required=False, allow_null=True)
+    status = serializers.ChoiceField(choices=["ACTIVE", "EXPIRED", "RENEWAL_DUE", "ARCHIVED", "VOID"], default="ACTIVE")
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class LegalRecordUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    record_type = serializers.ChoiceField(choices=["LEGAL", "CONTRACT", "LICENSE", "PERMIT", "INSURANCE", "AUDIT"], required=False)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    vendor_name = serializers.CharField(required=False, allow_blank=True)
+    effective_date = serializers.DateField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(required=False, allow_null=True)
+    renewal_due_at = serializers.DateTimeField(required=False, allow_null=True)
+    status = serializers.ChoiceField(choices=["ACTIVE", "EXPIRED", "RENEWAL_DUE", "ARCHIVED", "VOID"], required=False)
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class AuditRecordCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    audit_code = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    scope = serializers.CharField(required=False, allow_blank=True)
+    auditor = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    audit_date = serializers.DateField(required=False, allow_null=True)
+    result = serializers.ChoiceField(choices=["PASS", "FAIL", "PARTIAL", "OBSERVATION"])
+    score = serializers.DecimalField(max_digits=7, decimal_places=2, required=False, allow_null=True)
+    findings_summary = serializers.CharField(required=False, allow_blank=True)
+    corrective_actions_required = serializers.BooleanField(required=False, default=False)
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    related_risk_id = serializers.IntegerField(required=False, allow_null=True)
+    related_check_id = serializers.IntegerField(required=False, allow_null=True)
