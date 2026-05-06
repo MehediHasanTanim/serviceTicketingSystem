@@ -1256,3 +1256,156 @@ class CAPEXUpdateSerializer(serializers.Serializer):
 
 class DecisionSerializer(serializers.Serializer):
     comment = serializers.CharField(required=False, allow_blank=True)
+
+
+class SupplierResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    supplier_code = serializers.CharField()
+    name = serializers.CharField()
+    contact_person = serializers.CharField(allow_blank=True)
+    email = serializers.CharField(allow_blank=True)
+    phone = serializers.CharField(allow_blank=True)
+    address = serializers.CharField(allow_blank=True)
+    tax_id = serializers.CharField(allow_blank=True)
+    category = serializers.CharField(allow_blank=True)
+    status = serializers.CharField()
+    rating = serializers.IntegerField(required=False, allow_null=True)
+    notes = serializers.CharField(allow_blank=True)
+    created_by = serializers.IntegerField(required=False, allow_null=True)
+    updated_by = serializers.IntegerField(required=False, allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class ContractResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    contract_code = serializers.CharField()
+    supplier_id = serializers.IntegerField()
+    title = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
+    contract_type = serializers.CharField(allow_blank=True)
+    status = serializers.CharField()
+    effective_date = serializers.DateField()
+    expiry_date = serializers.DateField()
+    renewal_due_at = serializers.DateField(required=False, allow_null=True)
+    contract_value = serializers.DecimalField(max_digits=14, decimal_places=2)
+    currency = serializers.CharField()
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    created_by = serializers.IntegerField(required=False, allow_null=True)
+    updated_by = serializers.IntegerField(required=False, allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class PurchaseOrderLineItemResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    item_name = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = serializers.DecimalField(max_digits=14, decimal_places=2)
+    tax_rate = serializers.DecimalField(max_digits=8, decimal_places=4)
+    discount_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    line_total = serializers.DecimalField(max_digits=14, decimal_places=2)
+
+
+class PurchaseOrderResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    po_number = serializers.CharField()
+    supplier_id = serializers.IntegerField()
+    contract_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    requester_id = serializers.IntegerField()
+    approver_id = serializers.IntegerField(required=False, allow_null=True)
+    secondary_approver_id = serializers.IntegerField(required=False, allow_null=True)
+    status = serializers.CharField()
+    priority = serializers.CharField()
+    requested_date = serializers.DateField(required=False, allow_null=True)
+    required_by = serializers.DateField(required=False, allow_null=True)
+    approved_at = serializers.DateTimeField(required=False, allow_null=True)
+    ordered_at = serializers.DateTimeField(required=False, allow_null=True)
+    received_at = serializers.DateTimeField(required=False, allow_null=True)
+    subtotal = serializers.DecimalField(max_digits=14, decimal_places=2)
+    tax_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    discount_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    total_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    currency = serializers.CharField()
+    notes = serializers.CharField(allow_blank=True)
+    line_items = PurchaseOrderLineItemResponseSerializer(many=True)
+
+
+class CAPEXResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    capex_number = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    requester_id = serializers.IntegerField()
+    approver_id = serializers.IntegerField(required=False, allow_null=True)
+    secondary_approver_id = serializers.IntegerField(required=False, allow_null=True)
+    category = serializers.CharField(allow_blank=True)
+    status = serializers.CharField()
+    estimated_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    approved_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    currency = serializers.CharField()
+    justification = serializers.CharField(allow_blank=True)
+    business_impact = serializers.CharField(allow_blank=True)
+    requested_at = serializers.DateTimeField(required=False, allow_null=True)
+    approved_at = serializers.DateTimeField(required=False, allow_null=True)
+    completed_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class ApprovalQueueResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    entity_type = serializers.CharField()
+    entity_id = serializers.IntegerField()
+    entity_number = serializers.CharField(allow_blank=True)
+    title = serializers.CharField(allow_blank=True)
+    requester_id = serializers.IntegerField(required=False, allow_null=True)
+    approval_level = serializers.IntegerField()
+    approver_id = serializers.IntegerField()
+    status = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, allow_null=True)
+    currency = serializers.CharField(required=False, allow_blank=True)
+    decision_comment = serializers.CharField(allow_blank=True)
+    decided_at = serializers.DateTimeField(required=False, allow_null=True)
+    created_at = serializers.DateTimeField()
+
+
+class ApprovalDecisionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    comment = serializers.CharField(required=False, allow_blank=True)
+    decision_comment = serializers.CharField(required=False, allow_blank=True)
+    confirm_high_value = serializers.BooleanField(required=False, default=False)
+
+
+class PaginatedSupplierResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = SupplierResponseSerializer(many=True)
+
+
+class PaginatedContractResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = ContractResponseSerializer(many=True)
+
+
+class PaginatedPOResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = PurchaseOrderResponseSerializer(many=True)
+
+
+class PaginatedCAPEXResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = CAPEXResponseSerializer(many=True)
+
+
+class PaginatedApprovalQueueResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = ApprovalQueueResponseSerializer(many=True)

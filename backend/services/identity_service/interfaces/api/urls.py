@@ -218,5 +218,7 @@ urlpatterns = [
     path("corporate/capex-requests/<int:id>/complete", corporate_views.CAPEXCompleteView.as_view(), name="corporate-capex-complete"),
     path("corporate/capex-requests/<int:id>/cancel", corporate_views.CAPEXCancelView.as_view(), name="corporate-capex-cancel"),
     path("corporate/capex-requests/<int:id>/void", corporate_views.CAPEXVoidView.as_view(), name="corporate-capex-void"),
+    path("corporate/approvals", corporate_views.ApprovalQueueView.as_view(), name="corporate-approval-queue"),
+    path("corporate/approvals/<int:id>/<str:action>", corporate_views.ApprovalDecisionView.as_view(), name="corporate-approval-decision"),
 
 ]

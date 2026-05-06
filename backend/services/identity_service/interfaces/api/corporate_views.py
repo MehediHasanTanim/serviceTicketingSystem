@@ -1,5 +1,7 @@
 from django.db import IntegrityError
+from django.db.models import Case, IntegerField, Value, When
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,17 +19,28 @@ from application.services.corporate import (
     SupplierFilters,
     SupplierService,
 )
-from infrastructure.db.core.models import CAPEXRequest, CorporateContract, PurchaseOrder, RolePermission, Supplier, UserRole
+from infrastructure.db.core.models import ApprovalRequest, CAPEXRequest, CorporateContract, PurchaseOrder, RolePermission, Supplier, UserRole
 from infrastructure.services.audit_logging import get_audit_logger
 from interfaces.api.serializers import (
     CAPEXCreateSerializer,
+    CAPEXResponseSerializer,
     CAPEXUpdateSerializer,
+    ApprovalDecisionSerializer,
+    ApprovalQueueResponseSerializer,
     ContractCreateSerializer,
+    ContractResponseSerializer,
     ContractUpdateSerializer,
     DecisionSerializer,
+    PaginatedApprovalQueueResponseSerializer,
+    PaginatedCAPEXResponseSerializer,
+    PaginatedContractResponseSerializer,
+    PaginatedPOResponseSerializer,
+    PaginatedSupplierResponseSerializer,
     PurchaseOrderCreateSerializer,
+    PurchaseOrderResponseSerializer,
     PurchaseOrderUpdateSerializer,
     SupplierCreateSerializer,
+    SupplierResponseSerializer,
     SupplierUpdateSerializer,
 )
 
@@ -188,6 +201,7 @@ def _capex_dict(c: CAPEXRequest):
 class SupplierListCreateView(APIView):
     service = SupplierService()
 
+    @extend_schema(request=SupplierCreateSerializer, responses=SupplierResponseSerializer)
     def post(self, request):
         if not _has_permission(request.user, "corporate.suppliers.manage"):
             return Response({"detail": "Permission required: corporate.suppliers.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -203,6 +217,7 @@ class SupplierListCreateView(APIView):
             _audit(request, org_id=s.org_id, action="supplier_blacklisted", target_type="supplier", target_id=s.id, actor=request.user)
         return Response(_supplier_dict(s), status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=None, responses=PaginatedSupplierResponseSerializer)
     def get(self, request):
         if not _has_permission(request.user, "corporate.suppliers.view"):
             return Response({"detail": "Permission required: corporate.suppliers.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -224,6 +239,7 @@ class SupplierListCreateView(APIView):
 class SupplierDetailView(APIView):
     service = SupplierService()
 
+    @extend_schema(request=None, responses=SupplierResponseSerializer)
     def get(self, request, id: int):
         if not _has_permission(request.user, "corporate.suppliers.view"):
             return Response({"detail": "Permission required: corporate.suppliers.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -234,6 +250,7 @@ class SupplierDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         return Response(_supplier_dict(row))
 
+    @extend_schema(request=SupplierUpdateSerializer, responses=SupplierResponseSerializer)
     def patch(self, request, id: int):
         if not _has_permission(request.user, "corporate.suppliers.manage"):
             return Response({"detail": "Permission required: corporate.suppliers.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -254,6 +271,7 @@ class SupplierDetailView(APIView):
 class ContractListCreateView(APIView):
     service = ContractService()
 
+    @extend_schema(request=ContractCreateSerializer, responses=ContractResponseSerializer)
     def post(self, request):
         if not _has_permission(request.user, "corporate.contracts.manage"):
             return Response({"detail": "Permission required: corporate.contracts.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -268,6 +286,7 @@ class ContractListCreateView(APIView):
             _audit(request, org_id=row.org_id, action="contract_renewal_due", target_type="contract", target_id=row.id, actor=request.user)
         return Response(_contract_dict(row), status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=None, responses=PaginatedContractResponseSerializer)
     def get(self, request):
         if not _has_permission(request.user, "corporate.contracts.view"):
             return Response({"detail": "Permission required: corporate.contracts.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -289,6 +308,7 @@ class ContractListCreateView(APIView):
 class ContractDetailView(APIView):
     service = ContractService()
 
+    @extend_schema(request=None, responses=ContractResponseSerializer)
     def get(self, request, id: int):
         if not _has_permission(request.user, "corporate.contracts.view"):
             return Response({"detail": "Permission required: corporate.contracts.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -299,6 +319,7 @@ class ContractDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         return Response(_contract_dict(row))
 
+    @extend_schema(request=ContractUpdateSerializer, responses=ContractResponseSerializer)
     def patch(self, request, id: int):
         if not _has_permission(request.user, "corporate.contracts.manage"):
             return Response({"detail": "Permission required: corporate.contracts.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -317,6 +338,7 @@ class ContractDetailView(APIView):
 class PurchaseOrderListCreateView(APIView):
     service = PurchaseOrderService()
 
+    @extend_schema(request=PurchaseOrderCreateSerializer, responses=PurchaseOrderResponseSerializer)
     def post(self, request):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -329,6 +351,7 @@ class PurchaseOrderListCreateView(APIView):
         _audit(request, org_id=row.org_id, action="purchase_order_created", target_type="purchase_order", target_id=row.id, actor=request.user, property_id=row.property_id)
         return Response(_po_dict(row), status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=None, responses=PaginatedPOResponseSerializer)
     def get(self, request):
         if not _has_permission(request.user, "corporate.purchase_orders.view"):
             return Response({"detail": "Permission required: corporate.purchase_orders.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -346,6 +369,7 @@ class PurchaseOrderListCreateView(APIView):
 class PurchaseOrderDetailView(APIView):
     service = PurchaseOrderService()
 
+    @extend_schema(request=None, responses=PurchaseOrderResponseSerializer)
     def get(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.view"):
             return Response({"detail": "Permission required: corporate.purchase_orders.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -356,6 +380,7 @@ class PurchaseOrderDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         return Response(_po_dict(row))
 
+    @extend_schema(request=PurchaseOrderUpdateSerializer, responses=PurchaseOrderResponseSerializer)
     def patch(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -379,6 +404,7 @@ class PurchaseOrderDetailView(APIView):
 class PurchaseOrderSubmitView(APIView):
     service = PurchaseOrderService()
 
+    @extend_schema(request=DecisionSerializer, responses=PurchaseOrderResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -397,6 +423,7 @@ class PurchaseOrderSubmitView(APIView):
 class PurchaseOrderApproveView(APIView):
     service = PurchaseOrderService()
 
+    @extend_schema(request=DecisionSerializer, responses=PurchaseOrderResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -416,6 +443,7 @@ class PurchaseOrderApproveView(APIView):
 class PurchaseOrderRejectView(APIView):
     service = PurchaseOrderService()
 
+    @extend_schema(request=DecisionSerializer, responses=PurchaseOrderResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -436,6 +464,7 @@ class PurchaseOrderStatusActionView(APIView):
     status_value = PurchaseOrder.STATUS_ORDERED
     action_name = "purchase_order_ordered"
 
+    @extend_schema(request=DecisionSerializer, responses=PurchaseOrderResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.purchase_orders.manage"):
             return Response({"detail": "Permission required: corporate.purchase_orders.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -477,6 +506,7 @@ class PurchaseOrderVoidView(PurchaseOrderStatusActionView):
 class CAPEXListCreateView(APIView):
     service = CAPEXService()
 
+    @extend_schema(request=CAPEXCreateSerializer, responses=CAPEXResponseSerializer)
     def post(self, request):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -489,6 +519,7 @@ class CAPEXListCreateView(APIView):
         _audit(request, org_id=row.org_id, action="capex_created", target_type="capex_request", target_id=row.id, actor=request.user)
         return Response(_capex_dict(row), status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=None, responses=PaginatedCAPEXResponseSerializer)
     def get(self, request):
         if not _has_permission(request.user, "corporate.capex.view"):
             return Response({"detail": "Permission required: corporate.capex.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -500,6 +531,7 @@ class CAPEXListCreateView(APIView):
 class CAPEXDetailView(APIView):
     service = CAPEXService()
 
+    @extend_schema(request=None, responses=CAPEXResponseSerializer)
     def get(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.view"):
             return Response({"detail": "Permission required: corporate.capex.view"}, status=status.HTTP_403_FORBIDDEN)
@@ -510,6 +542,7 @@ class CAPEXDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         return Response(_capex_dict(row))
 
+    @extend_schema(request=CAPEXUpdateSerializer, responses=CAPEXResponseSerializer)
     def patch(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -533,6 +566,7 @@ class CAPEXDetailView(APIView):
 class CAPEXSubmitView(APIView):
     service = CAPEXService()
 
+    @extend_schema(request=DecisionSerializer, responses=CAPEXResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -549,6 +583,7 @@ class CAPEXSubmitView(APIView):
 
 
 class CAPEXReviewView(APIView):
+    @extend_schema(request=DecisionSerializer, responses=CAPEXResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -565,6 +600,7 @@ class CAPEXReviewView(APIView):
 class CAPEXApproveView(APIView):
     service = CAPEXService()
 
+    @extend_schema(request=DecisionSerializer, responses=CAPEXResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -584,6 +620,7 @@ class CAPEXApproveView(APIView):
 class CAPEXRejectView(APIView):
     service = CAPEXService()
 
+    @extend_schema(request=DecisionSerializer, responses=CAPEXResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -604,6 +641,7 @@ class CAPEXStatusActionView(APIView):
     status_value = CAPEXRequest.STATUS_BUDGET_RELEASED
     action_name = "capex_budget_released"
 
+    @extend_schema(request=DecisionSerializer, responses=CAPEXResponseSerializer)
     def post(self, request, id: int):
         if not _has_permission(request.user, "corporate.capex.manage"):
             return Response({"detail": "Permission required: corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
@@ -637,3 +675,120 @@ class CAPEXCancelView(CAPEXStatusActionView):
 class CAPEXVoidView(CAPEXStatusActionView):
     status_value = CAPEXRequest.STATUS_VOID
     action_name = "capex_voided"
+
+
+def _approval_dict(row: ApprovalRequest):
+    entity_number = ""
+    title = ""
+    requester_id = None
+    amount = None
+    currency = ""
+    if row.entity_type == ApprovalRequest.ENTITY_PURCHASE_ORDER:
+        po = PurchaseOrder.objects.filter(id=row.entity_id, org_id=row.org_id).first()
+        if po:
+            entity_number = po.po_number
+            title = po.notes or ""
+            requester_id = po.requester_id
+            amount = po.total_amount
+            currency = po.currency
+    elif row.entity_type == ApprovalRequest.ENTITY_CAPEX_REQUEST:
+        capex = CAPEXRequest.objects.filter(id=row.entity_id, org_id=row.org_id).first()
+        if capex:
+            entity_number = capex.capex_number
+            title = capex.title
+            requester_id = capex.requester_id
+            amount = capex.estimated_amount
+            currency = capex.currency
+    return {
+        "id": row.id,
+        "org_id": row.org_id,
+        "entity_type": row.entity_type,
+        "entity_id": row.entity_id,
+        "entity_number": entity_number,
+        "title": title,
+        "requester_id": requester_id,
+        "approval_level": row.approval_level,
+        "approver_id": row.approver_id,
+        "status": row.status,
+        "amount": amount,
+        "currency": currency,
+        "decision_comment": row.decision_comment,
+        "decided_at": row.decided_at,
+        "created_at": row.created_at,
+    }
+
+
+class ApprovalQueueView(APIView):
+    @extend_schema(request=None, responses=PaginatedApprovalQueueResponseSerializer)
+    def get(self, request):
+        can_view = _has_permission(request.user, "corporate.purchase_orders.view") or _has_permission(request.user, "corporate.capex.view")
+        if not can_view:
+            return Response({"detail": "Permission required: corporate.purchase_orders.view or corporate.capex.view"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id", "0"))
+        if not org_id:
+            return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        qs = ApprovalRequest.objects.filter(org_id=org_id)
+        if request.query_params.get("entity_type"):
+            qs = qs.filter(entity_type=request.query_params.get("entity_type"))
+        if request.query_params.get("status"):
+            qs = qs.filter(status=request.query_params.get("status"))
+        if request.query_params.get("approver_id"):
+            qs = qs.filter(approver_id=int(request.query_params.get("approver_id")))
+        if request.query_params.get("approval_level"):
+            qs = qs.filter(approval_level=int(request.query_params.get("approval_level")))
+        if request.query_params.get("date_from"):
+            qs = qs.filter(created_at__gte=request.query_params.get("date_from"))
+        if request.query_params.get("date_to"):
+            qs = qs.filter(created_at__lte=request.query_params.get("date_to"))
+        rows = qs.order_by(
+            Case(
+                When(status=ApprovalRequest.STATUS_PENDING, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+            "-created_at",
+        )
+        return Response({"count": rows.count(), "results": [_approval_dict(x) for x in rows]})
+
+
+class ApprovalDecisionView(APIView):
+    @extend_schema(request=ApprovalDecisionSerializer, responses=ApprovalQueueResponseSerializer)
+    def post(self, request, id: int, action: str):
+        can_manage = _has_permission(request.user, "corporate.purchase_orders.manage") or _has_permission(request.user, "corporate.capex.manage")
+        if not can_manage:
+            return Response({"detail": "Permission required: corporate.purchase_orders.manage or corporate.capex.manage"}, status=status.HTTP_403_FORBIDDEN)
+        serializer = ApprovalDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        org_id = serializer.validated_data["org_id"]
+        row = ApprovalRequest.objects.filter(id=id, org_id=org_id).first()
+        if not row:
+            return Response({"detail": "Approval request not found"}, status=status.HTTP_404_NOT_FOUND)
+        comment = serializer.validated_data.get("decision_comment") or serializer.validated_data.get("comment") or ""
+        try:
+            if row.entity_type == ApprovalRequest.ENTITY_PURCHASE_ORDER:
+                service = PurchaseOrderService()
+                po = service.get(org_id=org_id, po_id=row.entity_id)
+                if action == "approve":
+                    service.approve(po=po, actor=request.user, comment=comment)
+                elif action == "reject":
+                    service.reject(po=po, actor=request.user, reason=comment)
+                else:
+                    return Response({"detail": "Unsupported action"}, status=status.HTTP_400_BAD_REQUEST)
+            elif row.entity_type == ApprovalRequest.ENTITY_CAPEX_REQUEST:
+                service = CAPEXService()
+                capex = service.get(org_id=org_id, capex_id=row.entity_id)
+                if action == "approve":
+                    service.approve(capex=capex, actor=request.user, comment=comment)
+                elif action == "reject":
+                    service.reject(capex=capex, actor=request.user, reason=comment)
+                else:
+                    return Response({"detail": "Unsupported action"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"detail": "Unsupported entity type"}, status=status.HTTP_400_BAD_REQUEST)
+        except (CorporateValidationError, CorporateNotFoundError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        updated = ApprovalRequest.objects.filter(id=id, org_id=org_id).first()
+        if not updated:
+            return Response({"detail": "Approval request not found after decision"}, status=status.HTTP_404_NOT_FOUND)
+        _audit(request, org_id=org_id, action="approval_decision_recorded", target_type="approval_request", target_id=updated.id, actor=request.user)
+        return Response(_approval_dict(updated))

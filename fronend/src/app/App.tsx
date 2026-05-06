@@ -62,6 +62,7 @@ import { FBTasksPage } from '../modules/food-beverage/pages/FBTasksPage'
 import { FBTaskDetailPage } from '../modules/food-beverage/pages/FBTaskDetailPage'
 import { FBDashboardPage } from '../modules/food-beverage/pages/FBDashboardPage'
 import { FBAuditLogsPage } from '../modules/food-beverage/pages/FBAuditLogsPage'
+import { ApprovalQueuePage, CapexDetailPage, CapexFormPage, CapexPage, ContractDetailPage, ContractFormPage, ContractsPage, CorporateAuditLogsPage, PurchaseOrderDetailPage, PurchaseOrderFormPage, PurchaseOrdersPage, SupplierDetailPage, SupplierFormPage, SuppliersPage } from '../modules/corporate/pages'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -172,6 +173,24 @@ export function App() {
           <Route path="/food-beverage/tasks" element={<PrivateRoute><FBTasksPage /></PrivateRoute>} />
           <Route path="/food-beverage/tasks/:id" element={<PrivateRoute><FBTaskDetailPage /></PrivateRoute>} />
           <Route path="/food-beverage/audit-logs" element={<PrivateRoute><FBAuditLogsPage /></PrivateRoute>} />
+          <Route path="/corporate/suppliers" element={<PrivateRoute><SuppliersPage /></PrivateRoute>} />
+          <Route path="/corporate/suppliers/new" element={<PrivateRoute><SupplierFormPage /></PrivateRoute>} />
+          <Route path="/corporate/suppliers/:id" element={<PrivateRoute><SupplierDetailPage /></PrivateRoute>} />
+          <Route path="/corporate/suppliers/:id/edit" element={<PrivateRoute><SupplierFormPage /></PrivateRoute>} />
+          <Route path="/corporate/contracts" element={<PrivateRoute><ContractsPage /></PrivateRoute>} />
+          <Route path="/corporate/contracts/new" element={<PrivateRoute><ContractFormPage /></PrivateRoute>} />
+          <Route path="/corporate/contracts/:id" element={<PrivateRoute><ContractDetailPage /></PrivateRoute>} />
+          <Route path="/corporate/contracts/:id/edit" element={<PrivateRoute><ContractFormPage /></PrivateRoute>} />
+          <Route path="/corporate/purchase-orders" element={<PrivateRoute><PurchaseOrdersPage /></PrivateRoute>} />
+          <Route path="/corporate/purchase-orders/new" element={<PrivateRoute><PurchaseOrderFormPage /></PrivateRoute>} />
+          <Route path="/corporate/purchase-orders/:id" element={<PrivateRoute><PurchaseOrderDetailPage /></PrivateRoute>} />
+          <Route path="/corporate/purchase-orders/:id/edit" element={<PrivateRoute><PurchaseOrderFormPage /></PrivateRoute>} />
+          <Route path="/corporate/capex" element={<PrivateRoute><CapexPage /></PrivateRoute>} />
+          <Route path="/corporate/capex/new" element={<PrivateRoute><CapexFormPage /></PrivateRoute>} />
+          <Route path="/corporate/capex/:id" element={<PrivateRoute><CapexDetailPage /></PrivateRoute>} />
+          <Route path="/corporate/capex/:id/edit" element={<PrivateRoute><CapexFormPage /></PrivateRoute>} />
+          <Route path="/corporate/approvals" element={<PrivateRoute><ApprovalQueuePage /></PrivateRoute>} />
+          <Route path="/corporate/audit-logs" element={<PrivateRoute><CorporateAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
