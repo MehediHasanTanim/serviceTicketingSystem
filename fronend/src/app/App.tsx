@@ -63,6 +63,7 @@ import { FBTaskDetailPage } from '../modules/food-beverage/pages/FBTaskDetailPag
 import { FBDashboardPage } from '../modules/food-beverage/pages/FBDashboardPage'
 import { FBAuditLogsPage } from '../modules/food-beverage/pages/FBAuditLogsPage'
 import { ApprovalQueuePage, CapexDetailPage, CapexFormPage, CapexPage, ContractDetailPage, ContractFormPage, ContractsPage, CorporateAuditLogsPage, PurchaseOrderDetailPage, PurchaseOrderFormPage, PurchaseOrdersPage, SupplierDetailPage, SupplierFormPage, SuppliersPage } from '../modules/corporate/pages'
+import { EnergyAuditLogsPage, EnergyDashboardPage, EnergyTrendsPage, KPIReadingFormPage, KPIReadingsPage, SustainabilityReportsPage, SustainabilityTargetFormPage, SustainabilityTargetsPage, UtilityCostFormPage, UtilityCostsPage } from '../modules/energy/pages'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -191,6 +192,19 @@ export function App() {
           <Route path="/corporate/capex/:id/edit" element={<PrivateRoute><CapexFormPage /></PrivateRoute>} />
           <Route path="/corporate/approvals" element={<PrivateRoute><ApprovalQueuePage /></PrivateRoute>} />
           <Route path="/corporate/audit-logs" element={<PrivateRoute><CorporateAuditLogsPage /></PrivateRoute>} />
+          <Route path="/energy/dashboard" element={<PrivateRoute><EnergyDashboardPage /></PrivateRoute>} />
+          <Route path="/energy/trends" element={<PrivateRoute><EnergyTrendsPage /></PrivateRoute>} />
+          <Route path="/energy/kpi-readings" element={<PrivateRoute><KPIReadingsPage /></PrivateRoute>} />
+          <Route path="/energy/kpi-readings/new" element={<PrivateRoute><KPIReadingFormPage /></PrivateRoute>} />
+          <Route path="/energy/kpi-readings/:id" element={<PrivateRoute><KPIReadingFormPage /></PrivateRoute>} />
+          <Route path="/energy/utility-costs" element={<PrivateRoute><UtilityCostsPage /></PrivateRoute>} />
+          <Route path="/energy/utility-costs/new" element={<PrivateRoute><UtilityCostFormPage /></PrivateRoute>} />
+          <Route path="/energy/utility-costs/:id" element={<PrivateRoute><UtilityCostFormPage /></PrivateRoute>} />
+          <Route path="/energy/sustainability" element={<PrivateRoute><SustainabilityReportsPage /></PrivateRoute>} />
+          <Route path="/energy/sustainability-targets" element={<PrivateRoute><SustainabilityTargetsPage /></PrivateRoute>} />
+          <Route path="/energy/sustainability-targets/new" element={<PrivateRoute><SustainabilityTargetFormPage /></PrivateRoute>} />
+          <Route path="/energy/sustainability-targets/:id/edit" element={<PrivateRoute><SustainabilityTargetFormPage /></PrivateRoute>} />
+          <Route path="/energy/audit-logs" element={<PrivateRoute><EnergyAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
