@@ -9,6 +9,8 @@ from interfaces.api import service_order_views
 from interfaces.api import risk_compliance_views
 from interfaces.api import food_beverage_views
 from interfaces.api import corporate_views
+from interfaces.api import energy_views
+from interfaces.api import reporting_views
 
 urlpatterns = [
     path("me", auth_views.MeView.as_view(), name="auth-me"),
@@ -220,5 +222,41 @@ urlpatterns = [
     path("corporate/capex-requests/<int:id>/void", corporate_views.CAPEXVoidView.as_view(), name="corporate-capex-void"),
     path("corporate/approvals", corporate_views.ApprovalQueueView.as_view(), name="corporate-approval-queue"),
     path("corporate/approvals/<int:id>/<str:action>", corporate_views.ApprovalDecisionView.as_view(), name="corporate-approval-decision"),
+    path("energy/kpi-readings", energy_views.EnergyKPIReadingListCreateView.as_view(), name="energy-kpi-list-create"),
+    path("energy/kpi-readings/bulk", energy_views.EnergyKPIReadingBulkCreateView.as_view(), name="energy-kpi-bulk-create"),
+    path("energy/kpi-readings/<int:id>", energy_views.EnergyKPIReadingDetailView.as_view(), name="energy-kpi-detail"),
+    path("energy/utility-costs", energy_views.UtilityCostListCreateView.as_view(), name="energy-utility-cost-list-create"),
+    path("energy/utility-costs/<int:id>", energy_views.UtilityCostDetailView.as_view(), name="energy-utility-cost-detail"),
+    path("energy/utility-costs/<int:id>/submit", energy_views.UtilityCostSubmitView.as_view(), name="energy-utility-cost-submit"),
+    path("energy/utility-costs/<int:id>/approve", energy_views.UtilityCostApproveView.as_view(), name="energy-utility-cost-approve"),
+    path("energy/utility-costs/<int:id>/mark-paid", energy_views.UtilityCostMarkPaidView.as_view(), name="energy-utility-cost-paid"),
+    path("energy/utility-costs/<int:id>/void", energy_views.UtilityCostVoidView.as_view(), name="energy-utility-cost-void"),
+    path("energy/analytics/summary", energy_views.EnergyAnalyticsSummaryView.as_view(), name="energy-analytics-summary"),
+    path("energy/analytics/trends", energy_views.EnergyAnalyticsTrendsView.as_view(), name="energy-analytics-trends"),
+    path("energy/analytics/efficiency", energy_views.EnergyAnalyticsEfficiencyView.as_view(), name="energy-analytics-efficiency"),
+    path("energy/analytics/costs", energy_views.EnergyAnalyticsCostsView.as_view(), name="energy-analytics-costs"),
+    path("energy/analytics/sustainability", energy_views.EnergyAnalyticsSustainabilityView.as_view(), name="energy-analytics-sustainability"),
+    path("energy/sustainability-targets", energy_views.SustainabilityTargetListCreateView.as_view(), name="energy-sustainability-targets"),
+    path("energy/sustainability-targets/<int:id>", energy_views.SustainabilityTargetDetailView.as_view(), name="energy-sustainability-target-detail"),
+    path("reporting/data-mart/refresh", reporting_views.DataMartRefreshView.as_view(), name="reporting-data-mart-refresh"),
+    path("reporting/data-mart/runs", reporting_views.DataMartRunsView.as_view(), name="reporting-data-mart-runs"),
+    path("reporting/data-mart/metrics", reporting_views.DataMartMetricsView.as_view(), name="reporting-data-mart-metrics"),
+    path("reporting/definitions", reporting_views.ReportDefinitionListCreateView.as_view(), name="reporting-definitions"),
+    path("reporting/definitions/<int:definition_id>", reporting_views.ReportDefinitionDetailView.as_view(), name="reporting-definition-detail"),
+    path("reporting/reports/run", reporting_views.ReportRunView.as_view(), name="reporting-run-report"),
+    path("reporting/reports/runs", reporting_views.ReportRunView.as_view(), name="reporting-runs-list"),
+    path("reporting/reports/runs/<int:run_id>", reporting_views.ReportRunDetailView.as_view(), name="reporting-run-detail"),
+    path("reporting/reports/runs/<int:run_id>/download", reporting_views.ReportRunDownloadView.as_view(), name="reporting-run-download"),
+    path("reporting/schedules", reporting_views.ReportScheduleListCreateView.as_view(), name="reporting-schedules"),
+    path("reporting/schedules/<int:schedule_id>", reporting_views.ReportScheduleDetailView.as_view(), name="reporting-schedule-detail"),
+    path("reporting/schedules/<int:schedule_id>/activate", reporting_views.ReportScheduleActivateView.as_view(), name="reporting-schedule-activate"),
+    path("reporting/schedules/<int:schedule_id>/deactivate", reporting_views.ReportScheduleDeactivateView.as_view(), name="reporting-schedule-deactivate"),
+    path("reporting/schedules/run-due", reporting_views.ReportScheduleRunDueView.as_view(), name="reporting-schedule-run-due"),
+    path("reporting/analytics/executive-summary", reporting_views.ExecutiveSummaryAnalyticsView.as_view(), name="reporting-analytics-exec"),
+    path("reporting/analytics/department-performance", reporting_views.DepartmentPerformanceAnalyticsView.as_view(), name="reporting-analytics-dept"),
+    path("reporting/analytics/sla", reporting_views.SLAAnalyticsView.as_view(), name="reporting-analytics-sla"),
+    path("reporting/analytics/costs", reporting_views.CostAnalyticsView.as_view(), name="reporting-analytics-costs"),
+    path("reporting/analytics/compliance", reporting_views.ComplianceAnalyticsView.as_view(), name="reporting-analytics-compliance"),
+    path("reporting/analytics/energy", reporting_views.EnergyAnalyticsView.as_view(), name="reporting-analytics-energy"),
 
 ]

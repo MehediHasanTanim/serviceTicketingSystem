@@ -1409,3 +1409,213 @@ class PaginatedCAPEXResponseSerializer(serializers.Serializer):
 class PaginatedApprovalQueueResponseSerializer(serializers.Serializer):
     count = serializers.IntegerField()
     results = ApprovalQueueResponseSerializer(many=True)
+
+
+class EnergyKPICreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField()
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    meter_id = serializers.IntegerField(required=False, allow_null=True)
+    source = serializers.ChoiceField(choices=["MANUAL", "CSV_IMPORT", "IOT_METER", "UTILITY_BILL", "API_INTEGRATION"])
+    reading_date = serializers.DateField()
+    period_start = serializers.DateTimeField()
+    period_end = serializers.DateTimeField()
+    metric_type = serializers.ChoiceField(choices=["ELECTRICITY", "GAS", "WATER", "STEAM", "CHILLED_WATER", "DIESEL", "WASTE", "CARBON_EMISSIONS", "OTHER"])
+    raw_value = serializers.DecimalField(max_digits=20, decimal_places=6)
+    raw_unit = serializers.CharField(max_length=32)
+    occupancy_count = serializers.IntegerField(required=False, allow_null=True)
+    room_nights = serializers.IntegerField(required=False, allow_null=True)
+    covers_count = serializers.IntegerField(required=False, allow_null=True)
+    area_sqft = serializers.DecimalField(max_digits=20, decimal_places=4, required=False, allow_null=True)
+    external_reference_id = serializers.CharField(max_length=255, required=False, allow_null=True, allow_blank=True)
+    metadata = serializers.JSONField(required=False, default=dict)
+
+    def validate(self, attrs):
+        if attrs["raw_value"] < 0:
+            raise serializers.ValidationError("raw_value must be non-negative")
+        if attrs["period_end"] <= attrs["period_start"]:
+            raise serializers.ValidationError("period_end must be after period_start")
+        attrs["metadata_json"] = attrs.pop("metadata", {})
+        return attrs
+
+
+class EnergyKPIBulkCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    items = EnergyKPICreateSerializer(many=True)
+
+    def validate(self, attrs):
+        for item in attrs["items"]:
+            item["org_id"] = attrs["org_id"]
+        return attrs
+
+
+class EnergyKPIListFilterSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False)
+    department_id = serializers.IntegerField(required=False)
+    metric_type = serializers.CharField(required=False)
+    source = serializers.CharField(required=False)
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+
+class UtilityCostCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField()
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    vendor_id = serializers.IntegerField(required=False, allow_null=True)
+    utility_type = serializers.ChoiceField(choices=["ELECTRICITY", "GAS", "WATER", "DIESEL", "WASTE", "OTHER"])
+    billing_period_start = serializers.DateField()
+    billing_period_end = serializers.DateField()
+    usage_value = serializers.DecimalField(max_digits=20, decimal_places=6)
+    usage_unit = serializers.CharField(max_length=32)
+    base_charge = serializers.DecimalField(max_digits=14, decimal_places=2)
+    variable_charge = serializers.DecimalField(max_digits=14, decimal_places=2)
+    tax_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    adjustment_amount = serializers.DecimalField(max_digits=14, decimal_places=2, default="0")
+    total_cost = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    currency = serializers.CharField(max_length=8)
+    invoice_number = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    status = serializers.CharField(read_only=True)
+    created_by = serializers.IntegerField(read_only=True)
+    updated_by = serializers.IntegerField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+
+    def validate(self, attrs):
+        if attrs["usage_value"] < 0:
+            raise serializers.ValidationError("usage_value must be non-negative")
+        if attrs["billing_period_end"] <= attrs["billing_period_start"]:
+            raise serializers.ValidationError("billing_period_end must be after billing_period_start")
+        return attrs
+
+
+class UtilityCostUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    vendor_id = serializers.IntegerField(required=False, allow_null=True)
+    utility_type = serializers.ChoiceField(choices=["ELECTRICITY", "GAS", "WATER", "DIESEL", "WASTE", "OTHER"], required=False)
+    billing_period_start = serializers.DateField(required=False)
+    billing_period_end = serializers.DateField(required=False)
+    usage_value = serializers.DecimalField(max_digits=20, decimal_places=6, required=False)
+    usage_unit = serializers.CharField(max_length=32, required=False)
+    base_charge = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    variable_charge = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    tax_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    adjustment_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    currency = serializers.CharField(max_length=8, required=False)
+    invoice_number = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class UtilityCostListFilterSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False)
+    department_id = serializers.IntegerField(required=False)
+    utility_type = serializers.CharField(required=False)
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+
+class EnergyAnalyticsFilterSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False)
+    department_id = serializers.IntegerField(required=False)
+    metric_type = serializers.CharField(required=False)
+    utility_type = serializers.CharField(required=False)
+    source = serializers.CharField(required=False)
+    grouping = serializers.ChoiceField(choices=["day", "week", "month", "quarter", "year"], required=False)
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+
+class SustainabilityTargetCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField()
+    metric_type = serializers.ChoiceField(choices=["ELECTRICITY", "GAS", "WATER", "STEAM", "CHILLED_WATER", "DIESEL", "WASTE", "CARBON_EMISSIONS", "OTHER"])
+    target_period = serializers.ChoiceField(choices=["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"])
+    target_value = serializers.DecimalField(max_digits=20, decimal_places=6)
+    target_unit = serializers.CharField(max_length=32)
+    normalized_target_value = serializers.DecimalField(max_digits=20, decimal_places=6, read_only=True)
+    normalized_target_unit = serializers.CharField(max_length=32, read_only=True)
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    status = serializers.ChoiceField(choices=["ACTIVE", "ACHIEVED", "MISSED", "ARCHIVED"], required=False, default="ACTIVE")
+
+
+class SustainabilityTargetUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    target_value = serializers.DecimalField(max_digits=20, decimal_places=6, required=False)
+    target_unit = serializers.CharField(max_length=32, required=False)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+    status = serializers.ChoiceField(choices=["ACTIVE", "ACHIEVED", "MISSED", "ARCHIVED"], required=False)
+
+
+class DataMartRefreshSerializer(serializers.Serializer):
+    period_start = serializers.DateField()
+    period_end = serializers.DateField()
+    run_type = serializers.ChoiceField(choices=["MANUAL", "SCHEDULED"], default="MANUAL")
+
+
+class ReportingMetricFilterSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField(required=False)
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+    property_id = serializers.IntegerField(required=False)
+    department_id = serializers.IntegerField(required=False)
+    module = serializers.CharField(required=False)
+    grouping = serializers.ChoiceField(choices=["day", "week", "month", "quarter"], required=False, default="day")
+
+
+class ReportDefinitionCreateSerializer(serializers.Serializer):
+    report_code = serializers.CharField(max_length=96)
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    module_scope = serializers.ListField(child=serializers.CharField(), required=False)
+    report_type = serializers.ChoiceField(choices=["OPERATIONAL_SUMMARY", "DEPARTMENT_PERFORMANCE", "SLA_REPORT", "COST_REPORT", "COMPLIANCE_REPORT", "ENERGY_REPORT", "CUSTOM"])
+    default_filters = serializers.JSONField(required=False)
+    columns_config = serializers.JSONField(required=False)
+    chart_config = serializers.JSONField(required=False)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+
+class ReportDefinitionUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    module_scope = serializers.ListField(child=serializers.CharField(), required=False)
+    report_type = serializers.ChoiceField(choices=["OPERATIONAL_SUMMARY", "DEPARTMENT_PERFORMANCE", "SLA_REPORT", "COST_REPORT", "COMPLIANCE_REPORT", "ENERGY_REPORT", "CUSTOM"], required=False)
+    default_filters = serializers.JSONField(required=False)
+    columns_config = serializers.JSONField(required=False)
+    chart_config = serializers.JSONField(required=False)
+    is_active = serializers.BooleanField(required=False)
+
+
+class ReportRunRequestSerializer(serializers.Serializer):
+    report_definition_id = serializers.IntegerField()
+    filters = serializers.JSONField()
+    output_format = serializers.ChoiceField(choices=["JSON", "EXCEL", "PDF"], default="JSON")
+
+
+class ReportScheduleCreateSerializer(serializers.Serializer):
+    report_definition_id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY"])
+    frequency_config = serializers.JSONField(required=False)
+    recipients = serializers.ListField(child=serializers.EmailField(), required=False)
+    output_format = serializers.ChoiceField(choices=["EXCEL", "PDF"])
+    filters = serializers.JSONField(required=False)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+
+class ReportScheduleUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    frequency_type = serializers.ChoiceField(choices=["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY"], required=False)
+    frequency_config = serializers.JSONField(required=False)
+    recipients = serializers.ListField(child=serializers.EmailField(), required=False)
+    output_format = serializers.ChoiceField(choices=["EXCEL", "PDF"], required=False)
+    filters = serializers.JSONField(required=False)
+    is_active = serializers.BooleanField(required=False)

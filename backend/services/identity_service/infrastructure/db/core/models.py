@@ -2170,3 +2170,353 @@ class TechnicalAudit(TimestampedModel):
     conducted_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_technical_audits")
+
+
+class EnergyKPIReading(TimestampedModel):
+    METRIC_ELECTRICITY = "ELECTRICITY"
+    METRIC_GAS = "GAS"
+    METRIC_WATER = "WATER"
+    METRIC_STEAM = "STEAM"
+    METRIC_CHILLED_WATER = "CHILLED_WATER"
+    METRIC_DIESEL = "DIESEL"
+    METRIC_WASTE = "WASTE"
+    METRIC_CARBON_EMISSIONS = "CARBON_EMISSIONS"
+    METRIC_OTHER = "OTHER"
+    METRIC_TYPE_CHOICES = [
+        (METRIC_ELECTRICITY, "Electricity"),
+        (METRIC_GAS, "Gas"),
+        (METRIC_WATER, "Water"),
+        (METRIC_STEAM, "Steam"),
+        (METRIC_CHILLED_WATER, "Chilled Water"),
+        (METRIC_DIESEL, "Diesel"),
+        (METRIC_WASTE, "Waste"),
+        (METRIC_CARBON_EMISSIONS, "Carbon Emissions"),
+        (METRIC_OTHER, "Other"),
+    ]
+
+    SOURCE_MANUAL = "MANUAL"
+    SOURCE_CSV_IMPORT = "CSV_IMPORT"
+    SOURCE_IOT_METER = "IOT_METER"
+    SOURCE_UTILITY_BILL = "UTILITY_BILL"
+    SOURCE_API_INTEGRATION = "API_INTEGRATION"
+    SOURCE_CHOICES = [
+        (SOURCE_MANUAL, "Manual"),
+        (SOURCE_CSV_IMPORT, "CSV Import"),
+        (SOURCE_IOT_METER, "IoT Meter"),
+        (SOURCE_UTILITY_BILL, "Utility Bill"),
+        (SOURCE_API_INTEGRATION, "API Integration"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="energy_kpi_readings")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="energy_kpi_readings")
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="energy_kpi_readings", null=True, blank=True)
+    meter_id = models.BigIntegerField(null=True, blank=True)
+    source = models.CharField(max_length=32, choices=SOURCE_CHOICES)
+    reading_date = models.DateField()
+    period_start = models.DateTimeField()
+    period_end = models.DateTimeField()
+    metric_type = models.CharField(max_length=32, choices=METRIC_TYPE_CHOICES)
+    raw_value = models.DecimalField(max_digits=20, decimal_places=6)
+    raw_unit = models.CharField(max_length=32)
+    normalized_value = models.DecimalField(max_digits=20, decimal_places=6)
+    normalized_unit = models.CharField(max_length=32)
+    occupancy_count = models.PositiveIntegerField(null=True, blank=True)
+    room_nights = models.PositiveIntegerField(null=True, blank=True)
+    covers_count = models.PositiveIntegerField(null=True, blank=True)
+    area_sqft = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
+    external_reference_id = models.CharField(max_length=255, null=True, blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+    ingested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="energy_kpi_ingestions", null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["property", "reading_date"], name="energy_kpi_prop_date_idx"),
+            models.Index(fields=["department", "reading_date"], name="energy_kpi_dept_date_idx"),
+            models.Index(fields=["metric_type", "reading_date"], name="energy_kpi_metric_date_idx"),
+            models.Index(fields=["source", "reading_date"], name="energy_kpi_source_date_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "source", "external_reference_id"],
+                condition=models.Q(external_reference_id__isnull=False),
+                name="uniq_energy_kpi_ext_ref_per_org_source",
+            ),
+        ]
+
+
+class UtilityCostRecord(TimestampedModel):
+    TYPE_ELECTRICITY = "ELECTRICITY"
+    TYPE_GAS = "GAS"
+    TYPE_WATER = "WATER"
+    TYPE_DIESEL = "DIESEL"
+    TYPE_WASTE = "WASTE"
+    TYPE_OTHER = "OTHER"
+    UTILITY_TYPE_CHOICES = [
+        (TYPE_ELECTRICITY, "Electricity"),
+        (TYPE_GAS, "Gas"),
+        (TYPE_WATER, "Water"),
+        (TYPE_DIESEL, "Diesel"),
+        (TYPE_WASTE, "Waste"),
+        (TYPE_OTHER, "Other"),
+    ]
+
+    STATUS_DRAFT = "DRAFT"
+    STATUS_SUBMITTED = "SUBMITTED"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_PAID = "PAID"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_SUBMITTED, "Submitted"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_PAID, "Paid"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="utility_cost_records")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="utility_cost_records")
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="utility_cost_records", null=True, blank=True)
+    vendor_id = models.BigIntegerField(null=True, blank=True)
+    utility_type = models.CharField(max_length=32, choices=UTILITY_TYPE_CHOICES)
+    billing_period_start = models.DateField()
+    billing_period_end = models.DateField()
+    usage_value = models.DecimalField(max_digits=20, decimal_places=6)
+    usage_unit = models.CharField(max_length=32)
+    normalized_usage_value = models.DecimalField(max_digits=20, decimal_places=6)
+    normalized_usage_unit = models.CharField(max_length=32)
+    base_charge = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    variable_charge = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    adjustment_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_cost = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=8, default="USD")
+    invoice_number = models.CharField(max_length=128, blank=True)
+    attachment_id = models.BigIntegerField(null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_utility_costs")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_utility_costs")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["property", "billing_period_start"], name="utility_prop_period_idx"),
+            models.Index(fields=["department", "billing_period_start"], name="utility_dept_period_idx"),
+            models.Index(fields=["utility_type", "billing_period_start"], name="utility_type_period_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "property", "vendor_id", "invoice_number"],
+                condition=~models.Q(invoice_number=""),
+                name="uniq_utility_invoice_per_vendor_property",
+            ),
+        ]
+
+
+class SustainabilityTarget(TimestampedModel):
+    PERIOD_DAY = "DAY"
+    PERIOD_WEEK = "WEEK"
+    PERIOD_MONTH = "MONTH"
+    PERIOD_QUARTER = "QUARTER"
+    PERIOD_YEAR = "YEAR"
+    PERIOD_CHOICES = [
+        (PERIOD_DAY, "Day"),
+        (PERIOD_WEEK, "Week"),
+        (PERIOD_MONTH, "Month"),
+        (PERIOD_QUARTER, "Quarter"),
+        (PERIOD_YEAR, "Year"),
+    ]
+
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_ACHIEVED = "ACHIEVED"
+    STATUS_MISSED = "MISSED"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_ACHIEVED, "Achieved"),
+        (STATUS_MISSED, "Missed"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="sustainability_targets")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="sustainability_targets")
+    metric_type = models.CharField(max_length=32, choices=EnergyKPIReading.METRIC_TYPE_CHOICES)
+    target_period = models.CharField(max_length=16, choices=PERIOD_CHOICES)
+    target_value = models.DecimalField(max_digits=20, decimal_places=6)
+    target_unit = models.CharField(max_length=32)
+    normalized_target_value = models.DecimalField(max_digits=20, decimal_places=6)
+    normalized_target_unit = models.CharField(max_length=32)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_sustainability_targets")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["property", "metric_type", "status"], name="sustain_target_prop_metric_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "metric_type", "target_period"],
+                condition=models.Q(status="ACTIVE"),
+                name="uniq_active_sustain_target",
+            ),
+        ]
+
+
+class OperationalMetricSnapshot(models.Model):
+    PERIOD_DAILY = "DAILY"
+    PERIOD_WEEKLY = "WEEKLY"
+    PERIOD_MONTHLY = "MONTHLY"
+    PERIOD_CHOICES = [
+        (PERIOD_DAILY, "Daily"),
+        (PERIOD_WEEKLY, "Weekly"),
+        (PERIOD_MONTHLY, "Monthly"),
+    ]
+
+    snapshot_date = models.DateField()
+    snapshot_period = models.CharField(max_length=16, choices=PERIOD_CHOICES)
+    module_name = models.CharField(max_length=64)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="operational_metric_snapshots", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="operational_metric_snapshots", null=True, blank=True)
+    metric_key = models.CharField(max_length=128)
+    metric_value = models.DecimalField(max_digits=20, decimal_places=6)
+    metric_unit = models.CharField(max_length=32, blank=True)
+    dimension_data = models.JSONField(default=dict, blank=True)
+    source_record_count = models.PositiveIntegerField(default=0)
+    generated_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["snapshot_date", "snapshot_period", "module_name", "property", "department", "metric_key"],
+                name="uniq_oper_metric_snapshot_dimension",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["snapshot_date", "module_name"], name="ops_metric_date_module_idx"),
+            models.Index(fields=["property", "snapshot_date"], name="ops_metric_prop_date_idx"),
+        ]
+
+
+class ReportDataMartRun(models.Model):
+    TYPE_MANUAL = "MANUAL"
+    TYPE_SCHEDULED = "SCHEDULED"
+    TYPE_CHOICES = [(TYPE_MANUAL, "Manual"), (TYPE_SCHEDULED, "Scheduled")]
+
+    STATUS_PENDING = "PENDING"
+    STATUS_RUNNING = "RUNNING"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_FAILED = "FAILED"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_RUNNING, "Running"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    run_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    modules_processed = models.JSONField(default=list, blank=True)
+    records_processed = models.PositiveIntegerField(default=0)
+    errors = models.JSONField(default=list, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    triggered_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="report_data_mart_runs", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ReportDefinition(TimestampedModel):
+    TYPE_OPERATIONAL_SUMMARY = "OPERATIONAL_SUMMARY"
+    TYPE_DEPARTMENT_PERFORMANCE = "DEPARTMENT_PERFORMANCE"
+    TYPE_SLA_REPORT = "SLA_REPORT"
+    TYPE_COST_REPORT = "COST_REPORT"
+    TYPE_COMPLIANCE_REPORT = "COMPLIANCE_REPORT"
+    TYPE_ENERGY_REPORT = "ENERGY_REPORT"
+    TYPE_CUSTOM = "CUSTOM"
+    TYPE_CHOICES = [
+        (TYPE_OPERATIONAL_SUMMARY, "Operational Summary"),
+        (TYPE_DEPARTMENT_PERFORMANCE, "Department Performance"),
+        (TYPE_SLA_REPORT, "SLA Report"),
+        (TYPE_COST_REPORT, "Cost Report"),
+        (TYPE_COMPLIANCE_REPORT, "Compliance Report"),
+        (TYPE_ENERGY_REPORT, "Energy Report"),
+        (TYPE_CUSTOM, "Custom"),
+    ]
+
+    report_code = models.CharField(max_length=96, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    module_scope = models.JSONField(default=list, blank=True)
+    report_type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    default_filters = models.JSONField(default=dict, blank=True)
+    columns_config = models.JSONField(default=list, blank=True)
+    chart_config = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_report_definitions")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_report_definitions")
+
+
+class ReportRun(models.Model):
+    STATUS_PENDING = "PENDING"
+    STATUS_RUNNING = "RUNNING"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_FAILED = "FAILED"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_RUNNING, "Running"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    FORMAT_JSON = "JSON"
+    FORMAT_EXCEL = "EXCEL"
+    FORMAT_PDF = "PDF"
+    FORMAT_CHOICES = [
+        (FORMAT_JSON, "JSON"),
+        (FORMAT_EXCEL, "Excel"),
+        (FORMAT_PDF, "PDF"),
+    ]
+
+    report_definition = models.ForeignKey(ReportDefinition, on_delete=models.PROTECT, related_name="runs")
+    report_name = models.CharField(max_length=255)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="requested_report_runs")
+    filters = models.JSONField(default=dict, blank=True)
+    output_format = models.CharField(max_length=16, choices=FORMAT_CHOICES, default=FORMAT_JSON)
+    storage_key = models.CharField(max_length=512, blank=True)
+    error_message = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ReportSchedule(TimestampedModel):
+    FREQ_DAILY = "DAILY"
+    FREQ_WEEKLY = "WEEKLY"
+    FREQ_MONTHLY = "MONTHLY"
+    FREQ_QUARTERLY = "QUARTERLY"
+    FREQ_CHOICES = [
+        (FREQ_DAILY, "Daily"),
+        (FREQ_WEEKLY, "Weekly"),
+        (FREQ_MONTHLY, "Monthly"),
+        (FREQ_QUARTERLY, "Quarterly"),
+    ]
+
+    FORMAT_EXCEL = "EXCEL"
+    FORMAT_PDF = "PDF"
+    FORMAT_CHOICES = [(FORMAT_EXCEL, "Excel"), (FORMAT_PDF, "PDF")]
+
+    report_definition = models.ForeignKey(ReportDefinition, on_delete=models.PROTECT, related_name="schedules")
+    name = models.CharField(max_length=255)
+    frequency_type = models.CharField(max_length=16, choices=FREQ_CHOICES)
+    frequency_config = models.JSONField(default=dict, blank=True)
+    recipients = models.JSONField(default=list, blank=True)
+    output_format = models.CharField(max_length=16, choices=FORMAT_CHOICES)
+    filters = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    next_run_at = models.DateTimeField()
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_report_schedules")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_report_schedules")
