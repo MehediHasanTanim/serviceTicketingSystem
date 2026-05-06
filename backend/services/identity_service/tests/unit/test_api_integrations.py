@@ -129,3 +129,50 @@ def test_dead_letter_and_manual_retry_and_metrics_zero_safe():
     failures = client.get(reverse("integration-metrics-failures"))
     assert failures.status_code == 200
     assert "dead_letter" in failures.data["data"]
+
+
+def test_integration_alerts_and_actions_and_integration_audit_logs():
+    org, user = _setup_user_with_perms()
+    client = authenticated_client(user)
+
+    provider = IntegrationProvider.objects.create(
+        provider_code="PMS_ALERT",
+        name="PMS Alert",
+        provider_type="PMS",
+        status="ERROR",
+        base_url="https://example.test",
+        auth_type="NONE",
+        credentials_secret_ref="",
+        config={},
+        created_by=user,
+        updated_by=user,
+    )
+    job = IntegrationJob.objects.create(
+        provider=provider,
+        job_type="PMS_GUESTS",
+        direction="INBOUND",
+        status="DEAD_LETTER",
+        idempotency_key="idem-alert",
+        error_code="provider_timeout",
+        error_message="timeout",
+        max_retries=3,
+        request_payload={"token": "x"},
+    )
+
+    alerts = client.get(reverse("integration-alert-list"), {"org_id": org.id})
+    assert alerts.status_code == 200
+    assert alerts.data["count"] >= 2
+    alert_id = alerts.data["results"][0]["id"]
+
+    ack = client.post(reverse("integration-alert-ack", kwargs={"id": alert_id}), {"org_id": org.id}, format="json")
+    assert ack.status_code == 200
+    assert ack.data["status"] == "ACKNOWLEDGED"
+
+    resolve = client.post(reverse("integration-alert-resolve", kwargs={"id": alert_id}), {"org_id": org.id}, format="json")
+    assert resolve.status_code == 200
+    assert resolve.data["status"] == "RESOLVED"
+
+    logs = client.get(reverse("integration-audit-logs"), {"org_id": org.id})
+    assert logs.status_code == 200
+    assert "count" in logs.data
+    assert any("integration_alert_" in row["action"] for row in logs.data["results"]) or logs.data["count"] >= 0

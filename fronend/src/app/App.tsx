@@ -65,6 +65,16 @@ import { FBAuditLogsPage } from '../modules/food-beverage/pages/FBAuditLogsPage'
 import { ApprovalQueuePage, CapexDetailPage, CapexFormPage, CapexPage, ContractDetailPage, ContractFormPage, ContractsPage, CorporateAuditLogsPage, PurchaseOrderDetailPage, PurchaseOrderFormPage, PurchaseOrdersPage, SupplierDetailPage, SupplierFormPage, SuppliersPage } from '../modules/corporate/pages'
 import { EnergyAuditLogsPage, EnergyDashboardPage, EnergyTrendsPage, KPIReadingFormPage, KPIReadingsPage, SustainabilityReportsPage, SustainabilityTargetFormPage, SustainabilityTargetsPage, UtilityCostFormPage, UtilityCostsPage } from '../modules/energy/pages'
 import { DepartmentDashboardsPage, ExecutiveDashboardPage, ReportBuilderPage, ReportDefinitionsPage, ReportRunDetailPage, ReportRunsPage, ReportSchedulesPage, ReportingAuditLogsPage } from '../modules/reporting/pages'
+import { DeadLetterJobsPage } from '../modules/integrations/pages/DeadLetterJobsPage'
+import { IntegrationAlertsPage } from '../modules/integrations/pages/IntegrationAlertsPage'
+import { IntegrationAuditLogsPage } from '../modules/integrations/pages/IntegrationAuditLogsPage'
+import { IntegrationJobDetailPage } from '../modules/integrations/pages/IntegrationJobDetailPage'
+import { IntegrationJobsPage } from '../modules/integrations/pages/IntegrationJobsPage'
+import { IntegrationProviderDetailPage } from '../modules/integrations/pages/IntegrationProviderDetailPage'
+import { IntegrationProviderFormPage } from '../modules/integrations/pages/IntegrationProviderFormPage'
+import { IntegrationProvidersPage } from '../modules/integrations/pages/IntegrationProvidersPage'
+import { IntegrationStatusPage } from '../modules/integrations/pages/IntegrationStatusPage'
+import { IntegrationTroubleshootingPage } from '../modules/integrations/pages/IntegrationTroubleshootingPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -214,6 +224,17 @@ export function App() {
           <Route path="/reporting/reports/runs/:id" element={<PrivateRoute><ReportRunDetailPage /></PrivateRoute>} />
           <Route path="/reporting/schedules" element={<PrivateRoute><ReportSchedulesPage /></PrivateRoute>} />
           <Route path="/reporting/audit-logs" element={<PrivateRoute><ReportingAuditLogsPage /></PrivateRoute>} />
+          <Route path="/integrations/providers" element={<PrivateRoute><IntegrationProvidersPage /></PrivateRoute>} />
+          <Route path="/integrations/providers/new" element={<PrivateRoute><IntegrationProviderFormPage /></PrivateRoute>} />
+          <Route path="/integrations/providers/:id" element={<PrivateRoute><IntegrationProviderDetailPage /></PrivateRoute>} />
+          <Route path="/integrations/providers/:id/edit" element={<PrivateRoute><IntegrationProviderFormPage /></PrivateRoute>} />
+          <Route path="/integrations/status" element={<PrivateRoute><IntegrationStatusPage /></PrivateRoute>} />
+          <Route path="/integrations/jobs" element={<PrivateRoute><IntegrationJobsPage /></PrivateRoute>} />
+          <Route path="/integrations/jobs/:id" element={<PrivateRoute><IntegrationJobDetailPage /></PrivateRoute>} />
+          <Route path="/integrations/jobs/dead-letter" element={<PrivateRoute><DeadLetterJobsPage /></PrivateRoute>} />
+          <Route path="/integrations/alerts" element={<PrivateRoute><IntegrationAlertsPage /></PrivateRoute>} />
+          <Route path="/integrations/troubleshooting" element={<PrivateRoute><IntegrationTroubleshootingPage /></PrivateRoute>} />
+          <Route path="/integrations/audit-logs" element={<PrivateRoute><IntegrationAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

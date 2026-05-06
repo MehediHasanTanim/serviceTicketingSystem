@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +18,7 @@ from application.services.integrations import (
     ProviderClientError,
     ProviderServerError,
 )
-from infrastructure.db.core.models import IntegrationJob, IntegrationProvider, RolePermission, UserRole
+from infrastructure.db.core.models import AuditLog, IntegrationJob, IntegrationProvider, RolePermission, UserRole
 from infrastructure.services.audit_logging import get_audit_logger
 from interfaces.api.serializers import (
     IntegrationProviderCreateSerializer,
@@ -351,3 +353,156 @@ class IntegrationMetricsFailuresView(APIView):
         if not _has_permission(request.user, "integrations.metrics.view"):
             return Response({"detail": "Permission required: integrations.metrics.view"}, status=status.HTTP_403_FORBIDDEN)
         return Response({"data": self.service.failures()})
+
+
+def _integration_alert_rows(org_id: int):
+    provider_rows = IntegrationProvider.objects.filter(status=IntegrationProvider.STATUS_ERROR).order_by("-updated_at")
+    job_rows = IntegrationJob.objects.filter(status__in=[IntegrationJob.STATUS_FAILED, IntegrationJob.STATUS_RETRYING, IntegrationJob.STATUS_DEAD_LETTER]).select_related("provider").order_by("-updated_at")
+    alerts: list[dict] = []
+    for p in provider_rows:
+        alerts.append({
+            "id": f"provider-{p.id}-health",
+            "severity": "HIGH",
+            "provider": p.provider_code,
+            "alert_type": "provider_health_failure",
+            "message": f"{p.name} is in ERROR status",
+            "related_job": "",
+            "created_at": p.updated_at,
+        })
+    for j in job_rows:
+        if j.status == IntegrationJob.STATUS_DEAD_LETTER:
+            alert_type, severity = "dead_letter_job_created", "CRITICAL"
+        elif j.error_code == "provider_auth":
+            alert_type, severity = "authentication_failure", "HIGH"
+        elif j.error_code == "provider_timeout":
+            alert_type, severity = "provider_timeout", "HIGH"
+        elif j.error_code == "mapping_error":
+            alert_type, severity = "mapping_transform_failure", "MEDIUM"
+        else:
+            alert_type, severity = "repeated_job_failures", "HIGH" if j.status == IntegrationJob.STATUS_FAILED else "MEDIUM"
+        alerts.append({
+            "id": f"job-{j.id}-{j.status.lower()}",
+            "severity": severity,
+            "provider": j.provider.provider_code,
+            "alert_type": alert_type,
+            "message": j.error_message or f"Integration job {j.id} is {j.status}",
+            "related_job": str(j.id),
+            "created_at": j.updated_at or j.created_at,
+        })
+    status_map: dict[str, str] = {}
+    state_rows = AuditLog.objects.filter(org_id=org_id, action__in=["integration_alert_acknowledged", "integration_alert_resolved"]).order_by("created_at")
+    for row in state_rows:
+        status_map[row.target_id] = "RESOLVED" if row.action == "integration_alert_resolved" else "ACKNOWLEDGED"
+    for item in alerts:
+        item["status"] = status_map.get(item["id"], "OPEN")
+    return alerts
+
+
+class IntegrationAlertListView(APIView):
+    def get(self, request):
+        if not _has_permission(request.user, "integrations.jobs.view"):
+            return Response({"detail": "Permission required: integrations.jobs.view"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.query_params.get("org_id") or request.user.org_id)
+        rows = _integration_alert_rows(org_id)
+        severity = (request.query_params.get("severity") or "").upper()
+        provider = request.query_params.get("provider") or ""
+        alert_type = request.query_params.get("alert_type") or ""
+        status_filter = (request.query_params.get("status") or "").upper()
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if severity:
+            rows = [x for x in rows if x["severity"] == severity]
+        if provider:
+            rows = [x for x in rows if provider.lower() in x["provider"].lower()]
+        if alert_type:
+            rows = [x for x in rows if alert_type.lower() in x["alert_type"]]
+        if status_filter:
+            rows = [x for x in rows if x["status"] == status_filter]
+        if date_from:
+            parsed = parse_date(date_from)
+            if parsed:
+                rows = [x for x in rows if x["created_at"] and x["created_at"].date() >= parsed]
+        if date_to:
+            parsed = parse_date(date_to)
+            if parsed:
+                rows = [x for x in rows if x["created_at"] and x["created_at"].date() <= parsed]
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "20") or "20"), 1), 100)
+        total = len(rows)
+        offset = (page - 1) * page_size
+        paged = rows[offset:offset + page_size]
+        return Response({"count": total, "page": page, "page_size": page_size, "results": paged}, status=status.HTTP_200_OK)
+
+
+class _IntegrationAlertActionBase(APIView):
+    action = ""
+
+    def post(self, request, id: str):
+        if not _has_permission(request.user, "integrations.jobs.manage"):
+            return Response({"detail": "Permission required: integrations.jobs.manage"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = int(request.data.get("org_id") or request.user.org_id)
+        if not id:
+            return Response({"detail": "alert id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        _audit(request, org_id=org_id, action=self.action, entity_type="integration_alert", entity_id=str(id), metadata={"note": request.data.get("note", "")}, actor=request.user)
+        status_value = "ACKNOWLEDGED" if self.action.endswith("acknowledged") else "RESOLVED"
+        return Response({"id": id, "status": status_value}, status=status.HTTP_200_OK)
+
+
+class IntegrationAlertAcknowledgeView(_IntegrationAlertActionBase):
+    action = "integration_alert_acknowledged"
+
+
+class IntegrationAlertResolveView(_IntegrationAlertActionBase):
+    action = "integration_alert_resolved"
+
+
+class IntegrationAuditLogsView(APIView):
+    def get(self, request):
+        if not _has_permission(request.user, "integrations.metrics.view"):
+            return Response({"detail": "Permission required: integrations.metrics.view"}, status=status.HTTP_403_FORBIDDEN)
+        org_id = request.query_params.get("org_id")
+        if not org_id:
+            return Response({"detail": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        logs = AuditLog.objects.filter(org_id=org_id).filter(
+            models.Q(action__icontains="integration_")
+            | models.Q(action__icontains="pms_")
+            | models.Q(action__icontains="accounting_sync")
+            | models.Q(action__icontains="bas_iot")
+            | models.Q(action__icontains="notification_")
+        )
+        actor_user_id = request.query_params.get("actor_user_id")
+        if actor_user_id:
+            logs = logs.filter(actor_user_id=actor_user_id)
+        action = request.query_params.get("action")
+        if action:
+            logs = logs.filter(action__icontains=action)
+        target_type = request.query_params.get("target_type")
+        if target_type:
+            logs = logs.filter(target_type__icontains=target_type)
+        target_id = request.query_params.get("target_id")
+        if target_id:
+            logs = logs.filter(target_id=str(target_id))
+        date_from = request.query_params.get("date_from")
+        if date_from:
+            parsed = parse_date(date_from)
+            if parsed:
+                logs = logs.filter(created_at__date__gte=parsed)
+        date_to = request.query_params.get("date_to")
+        if date_to:
+            parsed = parse_date(date_to)
+            if parsed:
+                logs = logs.filter(created_at__date__lte=parsed)
+        q = request.query_params.get("q")
+        if q:
+            logs = logs.filter(models.Q(action__icontains=q) | models.Q(target_type__icontains=q) | models.Q(target_id__icontains=q) | models.Q(metadata_json__icontains=q))
+        sort_by = request.query_params.get("sort_by", "created_at")
+        sort_dir = request.query_params.get("sort_dir", "desc")
+        if sort_by not in {"created_at", "action", "target_type"}:
+            sort_by = "created_at"
+        prefix = "-" if sort_dir == "desc" else ""
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "20") or "20"), 1), 100)
+        total = logs.count()
+        offset = (page - 1) * page_size
+        rows = logs.order_by(f"{prefix}{sort_by}")[offset:offset + page_size]
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [{"id": r.id, "actor_user_id": r.actor_user_id, "action": r.action, "target_type": r.target_type, "target_id": r.target_id, "metadata": r.metadata_json, "created_at": r.created_at} for r in rows]}, status=status.HTTP_200_OK)
