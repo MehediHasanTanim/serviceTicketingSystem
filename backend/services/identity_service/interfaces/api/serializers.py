@@ -1126,3 +1126,133 @@ class FBTaskAssignSerializer(serializers.Serializer):
 class FBTaskActionSerializer(serializers.Serializer):
     org_id = serializers.IntegerField()
     reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class SupplierCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    supplier_code = serializers.CharField(max_length=64)
+    name = serializers.CharField(max_length=255)
+    contact_person = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    tax_id = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "BLACKLISTED", "ARCHIVED"], default="ACTIVE")
+    rating = serializers.IntegerField(required=False, min_value=1, max_value=5)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class SupplierUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    contact_person = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    tax_id = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "BLACKLISTED", "ARCHIVED"], required=False)
+    rating = serializers.IntegerField(required=False, min_value=1, max_value=5, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class ContractCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    contract_code = serializers.CharField(max_length=64)
+    supplier_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    contract_type = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED", "RENEWAL_DUE", "ARCHIVED"], default="DRAFT")
+    effective_date = serializers.DateField()
+    expiry_date = serializers.DateField()
+    renewal_due_at = serializers.DateField(required=False, allow_null=True)
+    contract_value = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal("0"))
+    currency = serializers.CharField(max_length=8, default="USD")
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class ContractUpdateSerializer(serializers.Serializer):
+    supplier_id = serializers.IntegerField(required=False)
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    contract_type = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED", "RENEWAL_DUE", "ARCHIVED"], required=False)
+    effective_date = serializers.DateField(required=False)
+    expiry_date = serializers.DateField(required=False)
+    renewal_due_at = serializers.DateField(required=False, allow_null=True)
+    contract_value = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, min_value=Decimal("0"))
+    currency = serializers.CharField(max_length=8, required=False)
+    attachment_id = serializers.IntegerField(required=False, allow_null=True)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class PurchaseOrderLineItemSerializer(serializers.Serializer):
+    item_name = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = serializers.DecimalField(max_digits=14, decimal_places=2)
+    tax_rate = serializers.DecimalField(max_digits=8, decimal_places=4, required=False, default="0")
+    discount_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default="0")
+
+
+class PurchaseOrderCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    po_number = serializers.CharField(max_length=64)
+    supplier_id = serializers.IntegerField()
+    contract_id = serializers.IntegerField(required=False, allow_null=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    requester_id = serializers.IntegerField()
+    approver_id = serializers.IntegerField(required=False, allow_null=True)
+    secondary_approver_id = serializers.IntegerField(required=False, allow_null=True)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], default="MEDIUM")
+    requested_date = serializers.DateField(required=False, allow_null=True)
+    required_by = serializers.DateField(required=False, allow_null=True)
+    currency = serializers.CharField(max_length=8, default="USD")
+    notes = serializers.CharField(required=False, allow_blank=True)
+    line_items = PurchaseOrderLineItemSerializer(many=True, required=False, default=list)
+
+
+class PurchaseOrderUpdateSerializer(serializers.Serializer):
+    admin_override = serializers.BooleanField(required=False, default=False)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False)
+    required_by = serializers.DateField(required=False, allow_null=True)
+    currency = serializers.CharField(max_length=8, required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    line_items = PurchaseOrderLineItemSerializer(many=True, required=False)
+
+
+class CAPEXCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    capex_number = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    requester_id = serializers.IntegerField()
+    approver_id = serializers.IntegerField(required=False, allow_null=True)
+    secondary_approver_id = serializers.IntegerField(required=False, allow_null=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    estimated_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    approved_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default="0")
+    currency = serializers.CharField(max_length=8, default="USD")
+    justification = serializers.CharField(required=False, allow_blank=True)
+    business_impact = serializers.CharField(required=False, allow_blank=True)
+
+
+class CAPEXUpdateSerializer(serializers.Serializer):
+    admin_override = serializers.BooleanField(required=False, default=False)
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    estimated_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    approved_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    currency = serializers.CharField(max_length=8, required=False)
+    justification = serializers.CharField(required=False, allow_blank=True)
+    business_impact = serializers.CharField(required=False, allow_blank=True)
+
+
+class DecisionSerializer(serializers.Serializer):
+    comment = serializers.CharField(required=False, allow_blank=True)

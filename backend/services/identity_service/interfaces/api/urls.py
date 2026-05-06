@@ -8,6 +8,7 @@ from interfaces.api import project_views
 from interfaces.api import service_order_views
 from interfaces.api import risk_compliance_views
 from interfaces.api import food_beverage_views
+from interfaces.api import corporate_views
 
 urlpatterns = [
     path("me", auth_views.MeView.as_view(), name="auth-me"),
@@ -194,5 +195,28 @@ urlpatterns = [
     path("food-beverage/metrics/outlet-readiness", food_beverage_views.FBMetricsOutletReadinessView.as_view(), name="fb-metrics-readiness"),
     path("food-beverage/metrics/tasks", food_beverage_views.FBMetricsTasksView.as_view(), name="fb-metrics-tasks"),
     path("food-beverage/audit-logs", food_beverage_views.FBAuditLogsView.as_view(), name="fb-audit-logs"),
+    path("corporate/suppliers", corporate_views.SupplierListCreateView.as_view(), name="corporate-suppliers"),
+    path("corporate/suppliers/<int:id>", corporate_views.SupplierDetailView.as_view(), name="corporate-supplier-detail"),
+    path("corporate/contracts", corporate_views.ContractListCreateView.as_view(), name="corporate-contracts"),
+    path("corporate/contracts/<int:id>", corporate_views.ContractDetailView.as_view(), name="corporate-contract-detail"),
+    path("corporate/purchase-orders", corporate_views.PurchaseOrderListCreateView.as_view(), name="corporate-po-list-create"),
+    path("corporate/purchase-orders/<int:id>", corporate_views.PurchaseOrderDetailView.as_view(), name="corporate-po-detail"),
+    path("corporate/purchase-orders/<int:id>/submit", corporate_views.PurchaseOrderSubmitView.as_view(), name="corporate-po-submit"),
+    path("corporate/purchase-orders/<int:id>/approve", corporate_views.PurchaseOrderApproveView.as_view(), name="corporate-po-approve"),
+    path("corporate/purchase-orders/<int:id>/reject", corporate_views.PurchaseOrderRejectView.as_view(), name="corporate-po-reject"),
+    path("corporate/purchase-orders/<int:id>/mark-ordered", corporate_views.PurchaseOrderOrderedView.as_view(), name="corporate-po-mark-ordered"),
+    path("corporate/purchase-orders/<int:id>/receive", corporate_views.PurchaseOrderReceiveView.as_view(), name="corporate-po-receive"),
+    path("corporate/purchase-orders/<int:id>/cancel", corporate_views.PurchaseOrderCancelView.as_view(), name="corporate-po-cancel"),
+    path("corporate/purchase-orders/<int:id>/void", corporate_views.PurchaseOrderVoidView.as_view(), name="corporate-po-void"),
+    path("corporate/capex-requests", corporate_views.CAPEXListCreateView.as_view(), name="corporate-capex-list-create"),
+    path("corporate/capex-requests/<int:id>", corporate_views.CAPEXDetailView.as_view(), name="corporate-capex-detail"),
+    path("corporate/capex-requests/<int:id>/submit", corporate_views.CAPEXSubmitView.as_view(), name="corporate-capex-submit"),
+    path("corporate/capex-requests/<int:id>/review", corporate_views.CAPEXReviewView.as_view(), name="corporate-capex-review"),
+    path("corporate/capex-requests/<int:id>/approve", corporate_views.CAPEXApproveView.as_view(), name="corporate-capex-approve"),
+    path("corporate/capex-requests/<int:id>/reject", corporate_views.CAPEXRejectView.as_view(), name="corporate-capex-reject"),
+    path("corporate/capex-requests/<int:id>/release-budget", corporate_views.CAPEXReleaseBudgetView.as_view(), name="corporate-capex-release-budget"),
+    path("corporate/capex-requests/<int:id>/complete", corporate_views.CAPEXCompleteView.as_view(), name="corporate-capex-complete"),
+    path("corporate/capex-requests/<int:id>/cancel", corporate_views.CAPEXCancelView.as_view(), name="corporate-capex-cancel"),
+    path("corporate/capex-requests/<int:id>/void", corporate_views.CAPEXVoidView.as_view(), name="corporate-capex-void"),
 
 ]

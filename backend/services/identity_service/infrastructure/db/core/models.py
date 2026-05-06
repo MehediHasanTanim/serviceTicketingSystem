@@ -564,6 +564,278 @@ class PMSSyncLog(models.Model):
         ]
 
 
+class Supplier(TimestampedModel):
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_INACTIVE = "INACTIVE"
+    STATUS_BLACKLISTED = "BLACKLISTED"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_BLACKLISTED, "Blacklisted"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="suppliers")
+    supplier_code = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    contact_person = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    address = models.TextField(blank=True)
+    tax_id = models.CharField(max_length=128, blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_suppliers")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_suppliers")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="supplier_org_status_idx"),
+            models.Index(fields=["org", "category"], name="supplier_org_category_idx"),
+            models.Index(fields=["org", "name"], name="supplier_org_name_idx"),
+        ]
+
+
+class CorporateContract(TimestampedModel):
+    STATUS_DRAFT = "DRAFT"
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_EXPIRED = "EXPIRED"
+    STATUS_TERMINATED = "TERMINATED"
+    STATUS_RENEWAL_DUE = "RENEWAL_DUE"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_EXPIRED, "Expired"),
+        (STATUS_TERMINATED, "Terminated"),
+        (STATUS_RENEWAL_DUE, "Renewal Due"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="corporate_contracts")
+    contract_code = models.CharField(max_length=64, unique=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name="contracts")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    contract_type = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    effective_date = models.DateField()
+    expiry_date = models.DateField()
+    renewal_due_at = models.DateField(null=True, blank=True)
+    contract_value = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    currency = models.CharField(max_length=8, default="USD")
+    attachment_id = models.BigIntegerField(null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_contracts", null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_contracts")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_contracts")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="contract_org_status_idx"),
+            models.Index(fields=["org", "supplier"], name="contract_org_supplier_idx"),
+            models.Index(fields=["org", "owner"], name="contract_org_owner_idx"),
+            models.Index(fields=["org", "expiry_date"], name="contract_org_expiry_idx"),
+        ]
+
+
+class PurchaseOrder(TimestampedModel):
+    STATUS_DRAFT = "DRAFT"
+    STATUS_SUBMITTED = "SUBMITTED"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_REJECTED = "REJECTED"
+    STATUS_ORDERED = "ORDERED"
+    STATUS_PARTIALLY_RECEIVED = "PARTIALLY_RECEIVED"
+    STATUS_RECEIVED = "RECEIVED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_SUBMITTED, "Submitted"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_ORDERED, "Ordered"),
+        (STATUS_PARTIALLY_RECEIVED, "Partially Received"),
+        (STATUS_RECEIVED, "Received"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    PRIORITY_LOW = "LOW"
+    PRIORITY_MEDIUM = "MEDIUM"
+    PRIORITY_HIGH = "HIGH"
+    PRIORITY_URGENT = "URGENT"
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW, "Low"),
+        (PRIORITY_MEDIUM, "Medium"),
+        (PRIORITY_HIGH, "High"),
+        (PRIORITY_URGENT, "Urgent"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="purchase_orders")
+    po_number = models.CharField(max_length=64, unique=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name="purchase_orders")
+    contract = models.ForeignKey(CorporateContract, on_delete=models.PROTECT, related_name="purchase_orders", null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="purchase_orders", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="purchase_orders", null=True, blank=True)
+    requester = models.ForeignKey(User, on_delete=models.PROTECT, related_name="requested_purchase_orders")
+    approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="approved_purchase_orders", null=True, blank=True)
+    secondary_approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="secondary_approved_purchase_orders", null=True, blank=True)
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+    requested_date = models.DateField(null=True, blank=True)
+    required_by = models.DateField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    ordered_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    currency = models.CharField(max_length=8, default="USD")
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_purchase_orders")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_purchase_orders")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="po_org_status_idx"),
+            models.Index(fields=["org", "supplier"], name="po_org_supplier_idx"),
+            models.Index(fields=["org", "requester"], name="po_org_requester_idx"),
+        ]
+
+
+class PurchaseOrderLineItem(TimestampedModel):
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name="line_items")
+    item_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    line_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["purchase_order", "created_at"], name="po_line_item_po_created_idx"),
+        ]
+
+
+class CAPEXRequest(TimestampedModel):
+    STATUS_DRAFT = "DRAFT"
+    STATUS_SUBMITTED = "SUBMITTED"
+    STATUS_UNDER_REVIEW = "UNDER_REVIEW"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_REJECTED = "REJECTED"
+    STATUS_BUDGET_RELEASED = "BUDGET_RELEASED"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_SUBMITTED, "Submitted"),
+        (STATUS_UNDER_REVIEW, "Under Review"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_BUDGET_RELEASED, "Budget Released"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="capex_requests")
+    capex_number = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="capex_requests", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="capex_requests", null=True, blank=True)
+    requester = models.ForeignKey(User, on_delete=models.PROTECT, related_name="requested_capex")
+    approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="approved_capex", null=True, blank=True)
+    secondary_approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="secondary_approved_capex", null=True, blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    estimated_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    approved_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    currency = models.CharField(max_length=8, default="USD")
+    justification = models.TextField(blank=True)
+    business_impact = models.TextField(blank=True)
+    requested_at = models.DateTimeField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_capex")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_capex")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "status"], name="capex_org_status_idx"),
+            models.Index(fields=["org", "requester"], name="capex_org_requester_idx"),
+        ]
+
+
+class ApprovalRequest(TimestampedModel):
+    ENTITY_PURCHASE_ORDER = "PURCHASE_ORDER"
+    ENTITY_CAPEX_REQUEST = "CAPEX_REQUEST"
+    ENTITY_CHOICES = [
+        (ENTITY_PURCHASE_ORDER, "Purchase Order"),
+        (ENTITY_CAPEX_REQUEST, "CAPEX Request"),
+    ]
+
+    STATUS_PENDING = "PENDING"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_REJECTED = "REJECTED"
+    STATUS_SKIPPED = "SKIPPED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_SKIPPED, "Skipped"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="approval_requests")
+    entity_type = models.CharField(max_length=32, choices=ENTITY_CHOICES)
+    entity_id = models.BigIntegerField()
+    approval_level = models.PositiveIntegerField()
+    approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="approval_requests")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    decision_comment = models.TextField(blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "entity_type", "entity_id", "approval_level", "status"],
+                condition=models.Q(status="PENDING"),
+                name="uniq_pending_approval_per_level",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["org", "entity_type", "entity_id"], name="approval_org_entity_idx"),
+            models.Index(fields=["approver", "status"], name="approval_approver_status_idx"),
+        ]
+
+
+class ApprovalHistory(TimestampedModel):
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="approval_history")
+    entity_type = models.CharField(max_length=32, choices=ApprovalRequest.ENTITY_CHOICES)
+    entity_id = models.BigIntegerField()
+    approval_level = models.PositiveIntegerField()
+    approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name="approval_history")
+    status = models.CharField(max_length=16, choices=ApprovalRequest.STATUS_CHOICES)
+    decision_comment = models.TextField(blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    request_ref = models.ForeignKey(ApprovalRequest, on_delete=models.PROTECT, related_name="history_entries", null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["org", "entity_type", "entity_id"], name="approval_hist_org_entity_idx"),
+            models.Index(fields=["entity_type", "entity_id", "approval_level"], name="approval_hist_entity_level_idx"),
+        ]
+
+
 class Asset(TimestampedModel):
     STATUS_ACTIVE = "ACTIVE"
     STATUS_INACTIVE = "INACTIVE"
