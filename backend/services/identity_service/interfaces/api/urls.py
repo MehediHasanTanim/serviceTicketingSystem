@@ -4,6 +4,7 @@ from interfaces.api import guest_complaint_views
 from interfaces.api import housekeeping_views
 from interfaces.api import inspection_views
 from interfaces.api import maintenance_views
+from interfaces.api import project_views
 from interfaces.api import service_order_views
 from interfaces.api import risk_compliance_views
 
@@ -152,5 +153,25 @@ urlpatterns = [
     path("risk-compliance/alerts/<int:id>/resolve", risk_compliance_views.AlertResolveView.as_view(), name="risk-compliance-alert-resolve"),
     path("risk-compliance/audit-logs", risk_compliance_views.RiskComplianceAuditLogView.as_view(), name="risk-compliance-audit-logs"),
     path("risk-compliance/approval-trails", risk_compliance_views.RiskComplianceApprovalTrailView.as_view(), name="risk-compliance-approval-trails"),
+    path("projects", project_views.ProjectListCreateView.as_view(), name="project-list-create"),
+    path("projects/<int:project_id>", project_views.ProjectDetailView.as_view(), name="project-detail"),
+    path("projects/<int:project_id>/status", project_views.ProjectStatusUpdateView.as_view(), name="project-status"),
+    path("projects/<int:project_id>/progress", project_views.ProjectProgressUpdateView.as_view(), name="project-progress"),
+    path("projects/<int:project_id>/timeline", project_views.ProjectTimelineView.as_view(), name="project-timeline"),
+    path("projects/<int:project_id>/snagging-items", project_views.SnaggingItemListCreateView.as_view(), name="project-snagging-list-create"),
+    path("projects/snagging-items/<int:snag_id>", project_views.SnaggingItemDetailView.as_view(), name="project-snagging-detail"),
+    path("projects/snagging-items/<int:snag_id>/assign", project_views.SnaggingAssignView.as_view(), name="project-snagging-assign"),
+    path("projects/snagging-items/<int:snag_id>/start", project_views.SnaggingStartView.as_view(), name="project-snagging-start"),
+    path("projects/snagging-items/<int:snag_id>/resolve", project_views.SnaggingResolveView.as_view(), name="project-snagging-resolve"),
+    path("projects/snagging-items/<int:snag_id>/verify", project_views.SnaggingVerifyView.as_view(), name="project-snagging-verify"),
+    path("projects/snagging-items/<int:snag_id>/reopen", project_views.SnaggingReopenView.as_view(), name="project-snagging-reopen"),
+    path("projects/snagging-items/<int:snag_id>/cancel", project_views.SnaggingCancelView.as_view(), name="project-snagging-cancel"),
+    path("projects/snagging-items/<int:snag_id>/void", project_views.SnaggingVoidView.as_view(), name="project-snagging-void"),
+    path("projects/<int:project_id>/technical-audits", project_views.TechnicalAuditListCreateView.as_view(), name="project-technical-audit-list-create"),
+    path("projects/technical-audits/<int:audit_id>", project_views.TechnicalAuditDetailView.as_view(), name="project-technical-audit-detail"),
+    path("projects/technical-audits/<int:audit_id>/start", project_views.TechnicalAuditStartView.as_view(), name="project-technical-audit-start"),
+    path("projects/technical-audits/<int:audit_id>/complete", project_views.TechnicalAuditCompleteView.as_view(), name="project-technical-audit-complete"),
+    path("projects/technical-audits/<int:audit_id>/cancel", project_views.TechnicalAuditCancelView.as_view(), name="project-technical-audit-cancel"),
+    path("projects/technical-audits/<int:audit_id>/void", project_views.TechnicalAuditVoidView.as_view(), name="project-technical-audit-void"),
 
 ]

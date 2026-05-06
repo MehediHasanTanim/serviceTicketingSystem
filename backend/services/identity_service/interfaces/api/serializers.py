@@ -857,3 +857,188 @@ class AuditRecordCreateSerializer(serializers.Serializer):
     attachment_id = serializers.IntegerField(required=False, allow_null=True)
     related_risk_id = serializers.IntegerField(required=False, allow_null=True)
     related_check_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class ProjectCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    project_code = serializers.CharField(max_length=64, required=False)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    project_type = serializers.ChoiceField(choices=["RENOVATION", "CONSTRUCTION", "MAINTENANCE_UPGRADE", "COMPLIANCE_REMEDIATION", "TECHNOLOGY", "OTHER"], default="OTHER")
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], default="MEDIUM")
+    status = serializers.ChoiceField(choices=["DRAFT", "PLANNED", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED", "VOID"], default="DRAFT")
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    manager_id = serializers.IntegerField(required=False, allow_null=True)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    planned_end_date = serializers.DateField(required=False, allow_null=True)
+    actual_end_date = serializers.DateField(required=False, allow_null=True)
+    budget_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default="0.00")
+    actual_cost = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, default="0.00")
+    progress_percentage = serializers.IntegerField(required=False, default=0)
+
+
+class ProjectUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    project_type = serializers.ChoiceField(choices=["RENOVATION", "CONSTRUCTION", "MAINTENANCE_UPGRADE", "COMPLIANCE_REMEDIATION", "TECHNOLOGY", "OTHER"], required=False)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False)
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    manager_id = serializers.IntegerField(required=False, allow_null=True)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    planned_end_date = serializers.DateField(required=False, allow_null=True)
+    actual_end_date = serializers.DateField(required=False, allow_null=True)
+    budget_amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    actual_cost = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    progress_percentage = serializers.IntegerField(required=False)
+
+
+class ProjectStatusUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    new_status = serializers.ChoiceField(choices=["DRAFT", "PLANNED", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED", "VOID"])
+    message = serializers.CharField(required=False, allow_blank=True)
+    admin_override = serializers.BooleanField(required=False, default=False)
+    actual_end_date = serializers.DateField(required=False, allow_null=True)
+
+
+class ProjectProgressUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    progress_percentage = serializers.IntegerField()
+    message = serializers.CharField(required=False, allow_blank=True)
+
+
+class ProjectResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
+    project_code = serializers.CharField(max_length=64)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(allow_blank=True)
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    department_id = serializers.IntegerField(required=False, allow_null=True)
+    project_type = serializers.CharField()
+    priority = serializers.CharField()
+    status = serializers.CharField()
+    owner_id = serializers.IntegerField(required=False, allow_null=True)
+    manager_id = serializers.IntegerField(required=False, allow_null=True)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    planned_end_date = serializers.DateField(required=False, allow_null=True)
+    actual_end_date = serializers.DateField(required=False, allow_null=True)
+    budget_amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    actual_cost = serializers.DecimalField(max_digits=14, decimal_places=2)
+    progress_percentage = serializers.IntegerField()
+    created_by = serializers.IntegerField()
+    updated_by = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class SnaggingCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    snag_number = serializers.CharField(max_length=64, required=False)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.ChoiceField(choices=["FINISHING", "ELECTRICAL", "PLUMBING", "HVAC", "CIVIL", "SAFETY", "QUALITY", "OTHER"], default="OTHER")
+    severity = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], default="MEDIUM")
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class SnaggingUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.ChoiceField(choices=["FINISHING", "ELECTRICAL", "PLUMBING", "HVAC", "CIVIL", "SAFETY", "QUALITY", "OTHER"], required=False)
+    severity = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], required=False)
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class SnaggingAssignSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    assignee_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class SnaggingTransitionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class SnaggingResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    snag_number = serializers.CharField(max_length=64)
+    project_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(allow_blank=True)
+    category = serializers.CharField()
+    severity = serializers.CharField()
+    status = serializers.CharField()
+    location_id = serializers.IntegerField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=False, allow_null=True)
+    asset_id = serializers.IntegerField(required=False, allow_null=True)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    reported_by = serializers.IntegerField()
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+    resolved_at = serializers.DateTimeField(required=False, allow_null=True)
+    verified_at = serializers.DateTimeField(required=False, allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class TechnicalAuditCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    audit_number = serializers.CharField(max_length=64, required=False)
+    title = serializers.CharField(max_length=255)
+    scope = serializers.CharField(required=False, allow_blank=True)
+    auditor_id = serializers.IntegerField(required=False, allow_null=True)
+    result = serializers.ChoiceField(choices=["PASS", "FAIL", "PARTIAL", "OBSERVATION"], required=False)
+    score = serializers.IntegerField(required=False)
+    findings_summary = serializers.CharField(required=False, allow_blank=True)
+    corrective_actions_required = serializers.BooleanField(required=False, default=False)
+    conducted_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class TechnicalAuditUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    scope = serializers.CharField(required=False, allow_blank=True)
+    auditor_id = serializers.IntegerField(required=False, allow_null=True)
+    result = serializers.ChoiceField(choices=["PASS", "FAIL", "PARTIAL", "OBSERVATION"], required=False)
+    score = serializers.IntegerField(required=False)
+    findings_summary = serializers.CharField(required=False, allow_blank=True)
+    corrective_actions_required = serializers.BooleanField(required=False)
+    conducted_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class TechnicalAuditCompleteSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    result = serializers.ChoiceField(choices=["PASS", "FAIL", "PARTIAL", "OBSERVATION"], required=False)
+    score = serializers.IntegerField(required=False)
+    findings_summary = serializers.CharField(required=False, allow_blank=True)
+    corrective_actions_required = serializers.BooleanField(required=False)
+    auto_create_corrective_item = serializers.BooleanField(required=False, default=False)
+
+
+class TechnicalAuditResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    audit_number = serializers.CharField(max_length=64)
+    project_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    scope = serializers.CharField(allow_blank=True)
+    auditor_id = serializers.IntegerField(required=False, allow_null=True)
+    status = serializers.CharField()
+    result = serializers.CharField(required=False, allow_null=True)
+    score = serializers.IntegerField(required=False, allow_null=True)
+    findings_summary = serializers.CharField(allow_blank=True)
+    corrective_actions_required = serializers.BooleanField()
+    conducted_at = serializers.DateTimeField(required=False, allow_null=True)
+    completed_at = serializers.DateTimeField(required=False, allow_null=True)
+    created_by = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()

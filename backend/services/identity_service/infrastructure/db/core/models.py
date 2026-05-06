@@ -1561,3 +1561,257 @@ class RiskComplianceAlert(models.Model):
     acknowledged_at = models.DateTimeField(null=True, blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Project(TimestampedModel):
+    TYPE_RENOVATION = "RENOVATION"
+    TYPE_CONSTRUCTION = "CONSTRUCTION"
+    TYPE_MAINTENANCE_UPGRADE = "MAINTENANCE_UPGRADE"
+    TYPE_COMPLIANCE_REMEDIATION = "COMPLIANCE_REMEDIATION"
+    TYPE_TECHNOLOGY = "TECHNOLOGY"
+    TYPE_OTHER = "OTHER"
+    TYPE_CHOICES = [
+        (TYPE_RENOVATION, "Renovation"),
+        (TYPE_CONSTRUCTION, "Construction"),
+        (TYPE_MAINTENANCE_UPGRADE, "Maintenance Upgrade"),
+        (TYPE_COMPLIANCE_REMEDIATION, "Compliance Remediation"),
+        (TYPE_TECHNOLOGY, "Technology"),
+        (TYPE_OTHER, "Other"),
+    ]
+
+    PRIORITY_LOW = "LOW"
+    PRIORITY_MEDIUM = "MEDIUM"
+    PRIORITY_HIGH = "HIGH"
+    PRIORITY_CRITICAL = "CRITICAL"
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW, "Low"),
+        (PRIORITY_MEDIUM, "Medium"),
+        (PRIORITY_HIGH, "High"),
+        (PRIORITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_DRAFT = "DRAFT"
+    STATUS_PLANNED = "PLANNED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_ON_HOLD = "ON_HOLD"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_PLANNED, "Planned"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_ON_HOLD, "On Hold"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="projects")
+    project_code = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="projects", null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="projects", null=True, blank=True)
+    project_type = models.CharField(max_length=32, choices=TYPE_CHOICES, default=TYPE_OTHER)
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_projects", null=True, blank=True)
+    manager = models.ForeignKey(User, on_delete=models.PROTECT, related_name="managed_projects", null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    planned_end_date = models.DateField(null=True, blank=True)
+    actual_end_date = models.DateField(null=True, blank=True)
+    budget_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    actual_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    progress_percentage = models.PositiveSmallIntegerField(default=0)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_projects")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_projects")
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["property"], name="project_property_idx"),
+            models.Index(fields=["department"], name="project_department_idx"),
+            models.Index(fields=["status"], name="project_status_idx"),
+            models.Index(fields=["priority"], name="project_priority_idx"),
+            models.Index(fields=["owner"], name="project_owner_idx"),
+            models.Index(fields=["manager"], name="project_manager_idx"),
+            models.Index(fields=["created_at"], name="project_created_idx"),
+        ]
+
+
+class ProjectTimeline(models.Model):
+    EVENT_PROJECT_CREATED = "project_created"
+    EVENT_PROJECT_UPDATED = "project_updated"
+    EVENT_PROJECT_STATUS_CHANGED = "project_status_changed"
+    EVENT_PROJECT_PROGRESS_UPDATED = "project_progress_updated"
+    EVENT_SNAGGING_ITEM_CREATED = "snagging_item_created"
+    EVENT_SNAGGING_ITEM_RESOLVED = "snagging_item_resolved"
+    EVENT_TECHNICAL_AUDIT_CREATED = "technical_audit_created"
+    EVENT_TECHNICAL_AUDIT_COMPLETED = "technical_audit_completed"
+    EVENT_ATTACHMENT_ADDED = "attachment_added"
+    EVENT_COMMENT_ADDED = "comment_added"
+    EVENT_CHOICES = [
+        (EVENT_PROJECT_CREATED, "Project Created"),
+        (EVENT_PROJECT_UPDATED, "Project Updated"),
+        (EVENT_PROJECT_STATUS_CHANGED, "Project Status Changed"),
+        (EVENT_PROJECT_PROGRESS_UPDATED, "Project Progress Updated"),
+        (EVENT_SNAGGING_ITEM_CREATED, "Snagging Item Created"),
+        (EVENT_SNAGGING_ITEM_RESOLVED, "Snagging Item Resolved"),
+        (EVENT_TECHNICAL_AUDIT_CREATED, "Technical Audit Created"),
+        (EVENT_TECHNICAL_AUDIT_COMPLETED, "Technical Audit Completed"),
+        (EVENT_ATTACHMENT_ADDED, "Attachment Added"),
+        (EVENT_COMMENT_ADDED, "Comment Added"),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="timeline_entries")
+    event_type = models.CharField(max_length=64, choices=EVENT_CHOICES)
+    previous_status = models.CharField(max_length=16, choices=Project.STATUS_CHOICES, null=True, blank=True)
+    new_status = models.CharField(max_length=16, choices=Project.STATUS_CHOICES, null=True, blank=True)
+    progress_percentage = models.PositiveSmallIntegerField(null=True, blank=True)
+    message = models.TextField(blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+    actor = models.ForeignKey(User, on_delete=models.PROTECT, related_name="project_timeline_entries")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["project", "created_at"], name="project_timeline_idx"),
+        ]
+
+
+class SnaggingItem(TimestampedModel):
+    CATEGORY_FINISHING = "FINISHING"
+    CATEGORY_ELECTRICAL = "ELECTRICAL"
+    CATEGORY_PLUMBING = "PLUMBING"
+    CATEGORY_HVAC = "HVAC"
+    CATEGORY_CIVIL = "CIVIL"
+    CATEGORY_SAFETY = "SAFETY"
+    CATEGORY_QUALITY = "QUALITY"
+    CATEGORY_OTHER = "OTHER"
+    CATEGORY_CHOICES = [
+        (CATEGORY_FINISHING, "Finishing"),
+        (CATEGORY_ELECTRICAL, "Electrical"),
+        (CATEGORY_PLUMBING, "Plumbing"),
+        (CATEGORY_HVAC, "HVAC"),
+        (CATEGORY_CIVIL, "Civil"),
+        (CATEGORY_SAFETY, "Safety"),
+        (CATEGORY_QUALITY, "Quality"),
+        (CATEGORY_OTHER, "Other"),
+    ]
+
+    SEVERITY_LOW = "LOW"
+    SEVERITY_MEDIUM = "MEDIUM"
+    SEVERITY_HIGH = "HIGH"
+    SEVERITY_CRITICAL = "CRITICAL"
+    SEVERITY_CHOICES = [
+        (SEVERITY_LOW, "Low"),
+        (SEVERITY_MEDIUM, "Medium"),
+        (SEVERITY_HIGH, "High"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    STATUS_OPEN = "OPEN"
+    STATUS_ASSIGNED = "ASSIGNED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_RESOLVED = "RESOLVED"
+    STATUS_VERIFIED = "VERIFIED"
+    STATUS_REOPENED = "REOPENED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_ASSIGNED, "Assigned"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_VERIFIED, "Verified"),
+        (STATUS_REOPENED, "Reopened"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="snagging_items")
+    snag_number = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=16, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER)
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default=SEVERITY_MEDIUM)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    location_id = models.BigIntegerField(null=True, blank=True)
+    room_id = models.BigIntegerField(null=True, blank=True)
+    asset_id = models.BigIntegerField(null=True, blank=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="assigned_snagging_items", null=True, blank=True)
+    reported_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="reported_snagging_items")
+    due_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+
+class SnaggingItemStatusHistory(models.Model):
+    snagging_item = models.ForeignKey(SnaggingItem, on_delete=models.CASCADE, related_name="status_history")
+    previous_status = models.CharField(max_length=16, choices=SnaggingItem.STATUS_CHOICES)
+    new_status = models.CharField(max_length=16, choices=SnaggingItem.STATUS_CHOICES)
+    changed_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="snagging_status_changes")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True)
+    metadata_json = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["snagging_item", "changed_at"], name="snag_status_hist_idx"),
+        ]
+
+
+class SnaggingItemAssignmentHistory(models.Model):
+    snagging_item = models.ForeignKey(SnaggingItem, on_delete=models.CASCADE, related_name="assignment_history")
+    previous_assignee = models.ForeignKey(User, on_delete=models.PROTECT, related_name="snagging_prev_assignments", null=True, blank=True)
+    new_assignee = models.ForeignKey(User, on_delete=models.PROTECT, related_name="snagging_new_assignments")
+    changed_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="snagging_assignment_changes")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["snagging_item", "changed_at"], name="snag_assign_hist_idx"),
+        ]
+
+
+class TechnicalAudit(TimestampedModel):
+    STATUS_SCHEDULED = "SCHEDULED"
+    STATUS_IN_PROGRESS = "IN_PROGRESS"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_VOID = "VOID"
+    STATUS_CHOICES = [
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_VOID, "Void"),
+    ]
+
+    RESULT_PASS = "PASS"
+    RESULT_FAIL = "FAIL"
+    RESULT_PARTIAL = "PARTIAL"
+    RESULT_OBSERVATION = "OBSERVATION"
+    RESULT_CHOICES = [
+        (RESULT_PASS, "Pass"),
+        (RESULT_FAIL, "Fail"),
+        (RESULT_PARTIAL, "Partial"),
+        (RESULT_OBSERVATION, "Observation"),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="technical_audits")
+    audit_number = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    scope = models.TextField(blank=True)
+    auditor = models.ForeignKey(User, on_delete=models.PROTECT, related_name="project_technical_audits", null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_SCHEDULED)
+    result = models.CharField(max_length=16, choices=RESULT_CHOICES, null=True, blank=True)
+    score = models.PositiveSmallIntegerField(null=True, blank=True)
+    findings_summary = models.TextField(blank=True)
+    corrective_actions_required = models.BooleanField(default=False)
+    conducted_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_technical_audits")
