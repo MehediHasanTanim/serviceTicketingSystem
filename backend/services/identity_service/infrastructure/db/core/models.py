@@ -2520,3 +2520,133 @@ class ReportSchedule(TimestampedModel):
     last_run_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_report_schedules")
     updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_report_schedules")
+
+class IntegrationProvider(TimestampedModel):
+    TYPE_PMS = "PMS"
+    TYPE_ACCOUNTING = "ACCOUNTING"
+    TYPE_BAS_IOT = "BAS_IOT"
+    TYPE_EMAIL = "EMAIL"
+    TYPE_SMS = "SMS"
+    TYPE_OTHER = "OTHER"
+    TYPE_CHOICES = [
+        (TYPE_PMS, "PMS"),
+        (TYPE_ACCOUNTING, "Accounting"),
+        (TYPE_BAS_IOT, "BAS / IoT"),
+        (TYPE_EMAIL, "Email"),
+        (TYPE_SMS, "SMS"),
+        (TYPE_OTHER, "Other"),
+    ]
+
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_INACTIVE = "INACTIVE"
+    STATUS_ERROR = "ERROR"
+    STATUS_ARCHIVED = "ARCHIVED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_ERROR, "Error"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    AUTH_NONE = "NONE"
+    AUTH_API_KEY = "API_KEY"
+    AUTH_BASIC = "BASIC"
+    AUTH_BEARER_TOKEN = "BEARER_TOKEN"
+    AUTH_OAUTH2 = "OAUTH2"
+    AUTH_CUSTOM = "CUSTOM"
+    AUTH_CHOICES = [
+        (AUTH_NONE, "None"),
+        (AUTH_API_KEY, "API Key"),
+        (AUTH_BASIC, "Basic"),
+        (AUTH_BEARER_TOKEN, "Bearer Token"),
+        (AUTH_OAUTH2, "OAuth2"),
+        (AUTH_CUSTOM, "Custom"),
+    ]
+
+    provider_code = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    provider_type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_INACTIVE)
+    base_url = models.CharField(max_length=512, blank=True)
+    auth_type = models.CharField(max_length=32, choices=AUTH_CHOICES, default=AUTH_NONE)
+    credentials_secret_ref = models.CharField(max_length=512, blank=True)
+    config = models.JSONField(default=dict, blank=True)
+    timeout_seconds = models.PositiveIntegerField(default=15)
+    retry_policy = models.JSONField(default=dict, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_integration_providers")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="updated_integration_providers")
+
+
+class IntegrationJob(TimestampedModel):
+    DIRECTION_INBOUND = "INBOUND"
+    DIRECTION_OUTBOUND = "OUTBOUND"
+    DIRECTION_CHOICES = [(DIRECTION_INBOUND, "Inbound"), (DIRECTION_OUTBOUND, "Outbound")]
+
+    STATUS_PENDING = "PENDING"
+    STATUS_RUNNING = "RUNNING"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_FAILED = "FAILED"
+    STATUS_RETRYING = "RETRYING"
+    STATUS_DEAD_LETTER = "DEAD_LETTER"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_RUNNING, "Running"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_RETRYING, "Retrying"),
+        (STATUS_DEAD_LETTER, "Dead Letter"),
+    ]
+
+    provider = models.ForeignKey(IntegrationProvider, on_delete=models.PROTECT, related_name="jobs")
+    job_type = models.CharField(max_length=64)
+    direction = models.CharField(max_length=16, choices=DIRECTION_CHOICES)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    idempotency_key = models.CharField(max_length=255)
+    external_event_id = models.CharField(max_length=255, blank=True)
+    correlation_id = models.CharField(max_length=128, blank=True)
+    source_entity_type = models.CharField(max_length=64, blank=True)
+    source_entity_id = models.CharField(max_length=128, blank=True)
+    target_entity_type = models.CharField(max_length=64, blank=True)
+    target_entity_id = models.CharField(max_length=128, blank=True)
+    request_payload = models.JSONField(default=dict, blank=True)
+    response_payload = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=64, blank=True)
+    error_message = models.TextField(blank=True)
+    retry_count = models.PositiveIntegerField(default=0)
+    max_retries = models.PositiveIntegerField(default=3)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "job_type", "idempotency_key"], name="uniq_integration_job_idem"),
+        ]
+        indexes = [
+            models.Index(fields=["status", "next_retry_at"], name="integration_job_retry_idx"),
+            models.Index(fields=["provider", "created_at"], name="int_job_provider_created_idx"),
+        ]
+
+
+class IntegrationJobAttempt(models.Model):
+    STATUS_RUNNING = "RUNNING"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_FAILED = "FAILED"
+    STATUS_CHOICES = [(STATUS_RUNNING, "Running"), (STATUS_SUCCESS, "Success"), (STATUS_FAILED, "Failed")]
+
+    job = models.ForeignKey(IntegrationJob, on_delete=models.CASCADE, related_name="attempts")
+    attempt_number = models.PositiveIntegerField()
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES)
+    started_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    request_payload = models.JSONField(default=dict, blank=True)
+    response_payload = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=64, blank=True)
+    error_message = models.TextField(blank=True)
+    duration_ms = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["job", "attempt_number"], name="int_attempt_job_num_idx"),
+        ]

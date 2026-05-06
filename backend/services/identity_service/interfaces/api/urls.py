@@ -11,8 +11,28 @@ from interfaces.api import food_beverage_views
 from interfaces.api import corporate_views
 from interfaces.api import energy_views
 from interfaces.api import reporting_views
+from interfaces.api import integration_views
 
 urlpatterns = [
+
+    path("integrations/providers", integration_views.IntegrationProviderListCreateView.as_view(), name="integration-provider-list-create"),
+    path("integrations/providers/<int:id>", integration_views.IntegrationProviderDetailView.as_view(), name="integration-provider-detail"),
+    path("integrations/providers/<int:id>/activate", integration_views.IntegrationProviderActivateView.as_view(), name="integration-provider-activate"),
+    path("integrations/providers/<int:id>/deactivate", integration_views.IntegrationProviderDeactivateView.as_view(), name="integration-provider-deactivate"),
+    path("integrations/providers/<int:id>/health-check", integration_views.IntegrationProviderHealthCheckView.as_view(), name="integration-provider-health-check"),
+    path("integrations/providers/<int:id>/health", integration_views.IntegrationProviderHealthView.as_view(), name="integration-provider-health"),
+    path("integrations/pms/<str:provider_code>/webhooks/occupancy", integration_views.PMSOccupancyWebhookView.as_view(), name="integration-pms-webhook-occupancy"),
+    path("integrations/pms/<str:provider_code>/webhooks/guests", integration_views.PMSGuestsWebhookView.as_view(), name="integration-pms-webhook-guests"),
+    path("integrations/pms/<str:provider_code>/webhooks/reservations", integration_views.PMSReservationsWebhookView.as_view(), name="integration-pms-webhook-reservations"),
+    path("integrations/jobs", integration_views.IntegrationJobListView.as_view(), name="integration-job-list"),
+    path("integrations/jobs/<int:id>", integration_views.IntegrationJobDetailView.as_view(), name="integration-job-detail"),
+    path("integrations/jobs/<int:id>/retry", integration_views.IntegrationJobRetryView.as_view(), name="integration-job-retry"),
+    path("integrations/jobs/<int:id>/dead-letter", integration_views.IntegrationJobDeadLetterView.as_view(), name="integration-job-dead-letter"),
+    path("integrations/jobs/dead-letter", integration_views.IntegrationJobDeadLetterListView.as_view(), name="integration-job-dead-letter-list"),
+    path("integrations/jobs/run-due-retries", integration_views.IntegrationRunDueRetriesView.as_view(), name="integration-job-run-due-retries"),
+    path("integrations/health", integration_views.IntegrationHealthView.as_view(), name="integration-health"),
+    path("integrations/metrics/summary", integration_views.IntegrationMetricsSummaryView.as_view(), name="integration-metrics-summary"),
+    path("integrations/metrics/failures", integration_views.IntegrationMetricsFailuresView.as_view(), name="integration-metrics-failures"),
     path("me", auth_views.MeView.as_view(), name="auth-me"),
     path("auth/signup", auth_views.SignupView.as_view(), name="auth-signup"),
     path("auth/login", auth_views.LoginView.as_view(), name="auth-login"),

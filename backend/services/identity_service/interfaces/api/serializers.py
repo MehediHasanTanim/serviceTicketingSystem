@@ -1619,3 +1619,58 @@ class ReportScheduleUpdateSerializer(serializers.Serializer):
     output_format = serializers.ChoiceField(choices=["EXCEL", "PDF"], required=False)
     filters = serializers.JSONField(required=False)
     is_active = serializers.BooleanField(required=False)
+
+class IntegrationProviderCreateSerializer(serializers.Serializer):
+    provider_code = serializers.CharField(max_length=64)
+    name = serializers.CharField(max_length=255)
+    provider_type = serializers.ChoiceField(choices=["PMS", "ACCOUNTING", "BAS_IOT", "EMAIL", "SMS", "OTHER"])
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "ERROR", "ARCHIVED"], required=False, default="INACTIVE")
+    base_url = serializers.CharField(max_length=512, required=False, allow_blank=True)
+    auth_type = serializers.ChoiceField(choices=["NONE", "API_KEY", "BASIC", "BEARER_TOKEN", "OAUTH2", "CUSTOM"], required=False, default="NONE")
+    credentials_secret_ref = serializers.CharField(max_length=512, required=False, allow_blank=True)
+    config = serializers.JSONField(required=False)
+    timeout_seconds = serializers.IntegerField(required=False, min_value=1, default=15)
+    retry_policy = serializers.JSONField(required=False)
+
+
+class IntegrationProviderUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255, required=False)
+    status = serializers.ChoiceField(choices=["ACTIVE", "INACTIVE", "ERROR", "ARCHIVED"], required=False)
+    base_url = serializers.CharField(max_length=512, required=False, allow_blank=True)
+    auth_type = serializers.ChoiceField(choices=["NONE", "API_KEY", "BASIC", "BEARER_TOKEN", "OAUTH2", "CUSTOM"], required=False)
+    credentials_secret_ref = serializers.CharField(max_length=512, required=False, allow_blank=True)
+    config = serializers.JSONField(required=False)
+    timeout_seconds = serializers.IntegerField(required=False, min_value=1)
+    retry_policy = serializers.JSONField(required=False)
+
+
+class IntegrationProviderHealthQuerySerializer(serializers.Serializer):
+    pass
+
+
+class PMSInboundEventSerializer(serializers.Serializer):
+    external_event_id = serializers.CharField(required=False, allow_blank=True)
+    room_id = serializers.IntegerField(required=False)
+    room_number = serializers.CharField(required=False, allow_blank=True)
+    property_id = serializers.IntegerField(required=False)
+    occupancy_status = serializers.CharField(required=False)
+    housekeeping_status = serializers.CharField(required=False, allow_blank=True)
+    guest_id = serializers.CharField(required=False, allow_blank=True)
+    reservation_id = serializers.CharField(required=False, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    vip_status = serializers.BooleanField(required=False)
+    loyalty_number = serializers.CharField(required=False, allow_blank=True)
+    preferences = serializers.JSONField(required=False)
+    check_in_date = serializers.DateField(required=False)
+    check_out_date = serializers.DateField(required=False)
+    reservation_status = serializers.CharField(required=False, allow_blank=True)
+    rate_code = serializers.CharField(required=False, allow_blank=True)
+    source = serializers.CharField(required=False, allow_blank=True)
+    timestamp = serializers.DateTimeField()
+
+
+class IntegrationJobManualRetrySerializer(serializers.Serializer):
+    force = serializers.BooleanField(required=False, default=False)
