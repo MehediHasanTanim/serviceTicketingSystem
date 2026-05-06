@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Q
 
 from application.services.audit_logging import AuditContext
 from application.services.projects import (
@@ -337,7 +338,36 @@ class SnaggingItemListCreateView(APIView):
         except ProjectNotFoundError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         rows = self.snag_service.list_for_project(project_id=project.id)
-        return Response({"count": rows.count(), "results": [SnaggingResponseSerializer(_snag_dict(x)).data for x in rows]})
+        if request.query_params.get("q"):
+            q = request.query_params.get("q")
+            rows = rows.filter(Q(title__icontains=q) | Q(snag_number__icontains=q))
+        if request.query_params.get("category"):
+            rows = rows.filter(category=request.query_params.get("category"))
+        if request.query_params.get("severity"):
+            rows = rows.filter(severity=request.query_params.get("severity"))
+        if request.query_params.get("status"):
+            rows = rows.filter(status=request.query_params.get("status"))
+        if request.query_params.get("assigned_to"):
+            rows = rows.filter(assigned_to_id=int(request.query_params.get("assigned_to")))
+        if request.query_params.get("room"):
+            rows = rows.filter(room_id=int(request.query_params.get("room")))
+        if request.query_params.get("location"):
+            rows = rows.filter(location_id=int(request.query_params.get("location")))
+        if request.query_params.get("due_from"):
+            rows = rows.filter(due_at__gte=request.query_params.get("due_from"))
+        if request.query_params.get("due_to"):
+            rows = rows.filter(due_at__lte=request.query_params.get("due_to"))
+        sort_by = request.query_params.get("sort_by", "created_at")
+        sort_dir = request.query_params.get("sort_dir", "desc").lower()
+        allowed = {"id", "snag_number", "title", "severity", "status", "due_at", "resolved_at", "verified_at", "created_at", "updated_at"}
+        if sort_by not in allowed:
+            sort_by = "created_at"
+        prefix = "-" if sort_dir == "desc" else ""
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), 100)
+        total = rows.count()
+        paged = rows.order_by(f"{prefix}{sort_by}")[(page - 1) * page_size: (page - 1) * page_size + page_size]
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [SnaggingResponseSerializer(_snag_dict(x)).data for x in paged]})
 
 
 class SnaggingItemDetailView(APIView):
@@ -470,7 +500,30 @@ class TechnicalAuditListCreateView(APIView):
         except ProjectNotFoundError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         rows = self.audit_service.list_for_project(project_id=project.id)
-        return Response({"count": rows.count(), "results": [TechnicalAuditResponseSerializer(_audit_dict(x)).data for x in rows]})
+        if request.query_params.get("q"):
+            q = request.query_params.get("q")
+            rows = rows.filter(Q(title__icontains=q) | Q(audit_number__icontains=q))
+        if request.query_params.get("status"):
+            rows = rows.filter(status=request.query_params.get("status"))
+        if request.query_params.get("result"):
+            rows = rows.filter(result=request.query_params.get("result"))
+        if request.query_params.get("auditor"):
+            rows = rows.filter(auditor_id=int(request.query_params.get("auditor")))
+        if request.query_params.get("conducted_from"):
+            rows = rows.filter(conducted_at__gte=request.query_params.get("conducted_from"))
+        if request.query_params.get("conducted_to"):
+            rows = rows.filter(conducted_at__lte=request.query_params.get("conducted_to"))
+        sort_by = request.query_params.get("sort_by", "created_at")
+        sort_dir = request.query_params.get("sort_dir", "desc").lower()
+        allowed = {"id", "audit_number", "title", "status", "result", "score", "conducted_at", "completed_at", "created_at", "updated_at"}
+        if sort_by not in allowed:
+            sort_by = "created_at"
+        prefix = "-" if sort_dir == "desc" else ""
+        page = max(int(request.query_params.get("page", "1") or "1"), 1)
+        page_size = min(max(int(request.query_params.get("page_size", "10") or "10"), 1), 100)
+        total = rows.count()
+        paged = rows.order_by(f"{prefix}{sort_by}")[(page - 1) * page_size: (page - 1) * page_size + page_size]
+        return Response({"count": total, "page": page, "page_size": page_size, "results": [TechnicalAuditResponseSerializer(_audit_dict(x)).data for x in paged]})
 
 
 class TechnicalAuditDetailView(APIView):

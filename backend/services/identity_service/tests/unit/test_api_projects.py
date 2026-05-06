@@ -185,3 +185,135 @@ def test_technical_audit_api_workflow_and_failed_audit_corrective_item():
     assert "technical_audit_created" in actions
     assert "technical_audit_started" in actions
     assert "technical_audit_completed" in actions
+
+
+@pytest.mark.django_db
+@pytest.mark.unit
+def test_snagging_list_supports_server_side_filters_sorting_and_pagination():
+    org = create_org("Projects Snag Query")
+    actor = create_user(org, email="snag-query@example.com")
+    assignee = create_user(org, email="snag-assignee@example.com")
+    grant_permissions(actor, ["projects.view", "projects.manage"], role_name="project-manager")
+    client = authenticated_client(actor)
+
+    project = client.post(reverse("project-list-create"), {"org_id": org.id, "title": "Snag Query Project"}, format="json").data
+
+    s1 = client.post(
+        reverse("project-snagging-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "Critical Leak", "severity": "CRITICAL", "category": "PLUMBING", "assigned_to": assignee.id, "due_at": "2026-01-20T10:00:00Z"},
+        format="json",
+    )
+    assert s1.status_code == status.HTTP_201_CREATED
+    s2 = client.post(
+        reverse("project-snagging-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "Paint touchup", "severity": "LOW", "category": "FINISHING", "due_at": "2026-01-10T10:00:00Z"},
+        format="json",
+    )
+    assert s2.status_code == status.HTTP_201_CREATED
+    s3 = client.post(
+        reverse("project-snagging-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "Cable issue", "severity": "HIGH", "category": "ELECTRICAL", "due_at": "2026-01-15T10:00:00Z"},
+        format="json",
+    )
+    assert s3.status_code == status.HTTP_201_CREATED
+
+    client.post(reverse("project-snagging-start", kwargs={"snag_id": s3.data["id"]}), {"org_id": org.id}, format="json")
+
+    filtered = client.get(
+        reverse("project-snagging-list-create", kwargs={"project_id": project["id"]}),
+        {
+            "org_id": org.id,
+            "q": "Leak",
+            "severity": "CRITICAL",
+            "category": "PLUMBING",
+            "assigned_to": assignee.id,
+            "due_from": "2026-01-19T00:00:00Z",
+            "due_to": "2026-01-21T00:00:00Z",
+            "sort_by": "due_at",
+            "sort_dir": "asc",
+            "page": 1,
+            "page_size": 10,
+        },
+    )
+    assert filtered.status_code == status.HTTP_200_OK
+    assert filtered.data["count"] == 1
+    assert filtered.data["results"][0]["title"] == "Critical Leak"
+    assert filtered.data["page"] == 1
+    assert filtered.data["page_size"] == 10
+
+    paged = client.get(
+        reverse("project-snagging-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "sort_by": "due_at", "sort_dir": "asc", "page": 2, "page_size": 1},
+    )
+    assert paged.status_code == status.HTTP_200_OK
+    assert paged.data["count"] == 3
+    assert len(paged.data["results"]) == 1
+    assert paged.data["results"][0]["title"] == "Cable issue"
+
+
+@pytest.mark.django_db
+@pytest.mark.unit
+def test_technical_audit_list_supports_server_side_filters_sorting_and_pagination():
+    org = create_org("Projects Audit Query")
+    actor = create_user(org, email="audit-query@example.com")
+    auditor = create_user(org, email="auditor@example.com")
+    grant_permissions(actor, ["projects.view", "projects.manage"], role_name="project-manager")
+    client = authenticated_client(actor)
+
+    project = client.post(reverse("project-list-create"), {"org_id": org.id, "title": "Audit Query Project"}, format="json").data
+
+    a1 = client.post(
+        reverse("project-technical-audit-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "Electrical Audit", "auditor_id": auditor.id, "conducted_at": "2026-01-20T10:00:00Z"},
+        format="json",
+    )
+    assert a1.status_code == status.HTTP_201_CREATED
+    a2 = client.post(
+        reverse("project-technical-audit-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "HVAC Audit", "auditor_id": auditor.id, "conducted_at": "2026-01-10T10:00:00Z"},
+        format="json",
+    )
+    assert a2.status_code == status.HTTP_201_CREATED
+    a3 = client.post(
+        reverse("project-technical-audit-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "title": "Plumbing Audit"},
+        format="json",
+    )
+    assert a3.status_code == status.HTTP_201_CREATED
+
+    client.post(reverse("project-technical-audit-start", kwargs={"audit_id": a1.data["id"]}), {"org_id": org.id}, format="json")
+    client.post(
+        reverse("project-technical-audit-complete", kwargs={"audit_id": a1.data["id"]}),
+        {"org_id": org.id, "result": "PASS", "score": 91},
+        format="json",
+    )
+
+    filtered = client.get(
+        reverse("project-technical-audit-list-create", kwargs={"project_id": project["id"]}),
+        {
+            "org_id": org.id,
+            "q": "Electrical",
+            "status": "COMPLETED",
+            "result": "PASS",
+            "auditor": auditor.id,
+            "conducted_from": "2026-01-19T00:00:00Z",
+            "conducted_to": "2026-01-21T00:00:00Z",
+            "sort_by": "conducted_at",
+            "sort_dir": "desc",
+            "page": 1,
+            "page_size": 10,
+        },
+    )
+    assert filtered.status_code == status.HTTP_200_OK
+    assert filtered.data["count"] == 1
+    assert filtered.data["results"][0]["title"] == "Electrical Audit"
+    assert filtered.data["page"] == 1
+    assert filtered.data["page_size"] == 10
+
+    paged = client.get(
+        reverse("project-technical-audit-list-create", kwargs={"project_id": project["id"]}),
+        {"org_id": org.id, "sort_by": "conducted_at", "sort_dir": "asc", "page": 2, "page_size": 1},
+    )
+    assert paged.status_code == status.HTTP_200_OK
+    assert paged.data["count"] == 3
+    assert len(paged.data["results"]) == 1

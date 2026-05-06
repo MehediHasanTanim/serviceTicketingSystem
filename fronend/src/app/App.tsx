@@ -47,6 +47,12 @@ import { LegalRecordDetailPage } from '../modules/risk-compliance/pages/LegalRec
 import { AuditRecordsPage } from '../modules/risk-compliance/pages/AuditRecordsPage'
 import { AuditRecordDetailPage } from '../modules/risk-compliance/pages/AuditRecordDetailPage'
 import { RiskComplianceAuditLogsPage } from '../modules/risk-compliance/pages/RiskComplianceAuditLogsPage'
+import { ProjectsPage } from '../modules/projects/pages/ProjectsPage'
+import { ProjectFormPage } from '../modules/projects/pages/ProjectFormPage'
+import { ProjectDetailPage } from '../modules/projects/pages/ProjectDetailPage'
+import { SnaggingItemDetailPage } from '../modules/projects/pages/SnaggingItemDetailPage'
+import { TechnicalAuditDetailPage } from '../modules/projects/pages/TechnicalAuditDetailPage'
+import { ProjectAuditLogsPage } from '../modules/projects/pages/ProjectAuditLogsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -140,6 +146,13 @@ export function App() {
           <Route path="/risk-compliance/audit-records/new" element={<PrivateRoute><AuditRecordDetailPage /></PrivateRoute>} />
           <Route path="/risk-compliance/audit-records/:id" element={<PrivateRoute><AuditRecordDetailPage /></PrivateRoute>} />
           <Route path="/risk-compliance/audit-logs" element={<PrivateRoute><RiskComplianceAuditLogsPage /></PrivateRoute>} />
+          <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
+          <Route path="/projects/new" element={<PrivateRoute><ProjectFormPage /></PrivateRoute>} />
+          <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+          <Route path="/projects/:id/edit" element={<PrivateRoute><ProjectFormPage /></PrivateRoute>} />
+          <Route path="/projects/snagging-items/:snagId" element={<PrivateRoute><SnaggingItemDetailPage /></PrivateRoute>} />
+          <Route path="/projects/technical-audits/:auditId" element={<PrivateRoute><TechnicalAuditDetailPage /></PrivateRoute>} />
+          <Route path="/projects/audit-logs" element={<PrivateRoute><ProjectAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
