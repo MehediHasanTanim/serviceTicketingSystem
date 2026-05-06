@@ -1,0 +1,26 @@
+import { useEffect, useState } from 'react'
+import { reportingApi } from '../api/reporting.api'
+import type { ReportDefinitionCreatePayload, ReportDefinitionUpdatePayload, ReportRunRequestPayload, ReportScheduleCreatePayload, ReportScheduleUpdatePayload, ReportingMetricFilters } from '../types/reporting.types'
+function useAsyncState<T>(loader: () => Promise<T>, deps: Array<unknown>, enabled = true) { const [data, setData] = useState<T | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState(''); const reload = async () => { if (!enabled) return; setLoading(true); setError(''); try { setData(await loader()) } catch (e: any) { setError(e?.message || 'Request failed'); setData(null) } finally { setLoading(false) } }; useEffect(() => { void reload() }, deps); return { data, loading, error, reload } }
+export const useExecutiveSummary = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getExecutiveSummary(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useDepartmentPerformance = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getDepartmentPerformance(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useReportingSla = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getSla(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useReportingCosts = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getCosts(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useReportingCompliance = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getCompliance(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useReportingEnergy = (token?: string, query?: ReportingMetricFilters) => useAsyncState(() => reportingApi.getEnergy(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)
+export const useReportDefinitions = (token?: string) => useAsyncState(() => reportingApi.getReportDefinitions(token || ''), [token], !!token)
+export const useReportDefinitionDetail = (token?: string, id?: number) => useAsyncState(() => reportingApi.getReportDefinitionDetail(token || '', id || 0), [token, id], !!token && !!id)
+export const useCreateReportDefinition = () => (token: string, payload: ReportDefinitionCreatePayload) => reportingApi.createReportDefinition(token, payload)
+export const useUpdateReportDefinition = () => (token: string, id: number, payload: ReportDefinitionUpdatePayload) => reportingApi.updateReportDefinition(token, id, payload)
+export const useReportRuns = (token?: string) => useAsyncState(() => reportingApi.getReportRuns(token || ''), [token], !!token)
+export const useReportRunDetail = (token?: string, id?: number) => useAsyncState(() => reportingApi.getReportRunDetail(token || '', id || 0), [token, id], !!token && !!id)
+export const useRunReport = () => (token: string, payload: ReportRunRequestPayload) => reportingApi.runReport(token, payload)
+export const useDownloadReport = () => (token: string, id: number) => reportingApi.downloadReport(token, id)
+export const useReportSchedules = (token?: string) => useAsyncState(() => reportingApi.getReportSchedules(token || ''), [token], !!token)
+export const useReportScheduleDetail = (token?: string, id?: number) => useAsyncState(() => reportingApi.getReportScheduleDetail(token || '', id || 0), [token, id], !!token && !!id)
+export const useCreateReportSchedule = () => (token: string, payload: ReportScheduleCreatePayload) => reportingApi.createReportSchedule(token, payload)
+export const useUpdateReportSchedule = () => (token: string, id: number, payload: ReportScheduleUpdatePayload) => reportingApi.updateReportSchedule(token, id, payload)
+export const useActivateReportSchedule = () => (token: string, id: number) => reportingApi.activateReportSchedule(token, id)
+export const useDeactivateReportSchedule = () => (token: string, id: number) => reportingApi.deactivateReportSchedule(token, id)
+export const useRunDueReportSchedules = () => (token: string) => reportingApi.runDueReportSchedules(token)
+export const useReportingAuditLogs = (token?: string, query?: Record<string, unknown>) => useAsyncState(() => reportingApi.getReportingAuditLogs(token || '', query || {}), [token, JSON.stringify(query)], !!token && !!query)

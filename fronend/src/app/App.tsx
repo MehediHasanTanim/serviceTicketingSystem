@@ -64,6 +64,7 @@ import { FBDashboardPage } from '../modules/food-beverage/pages/FBDashboardPage'
 import { FBAuditLogsPage } from '../modules/food-beverage/pages/FBAuditLogsPage'
 import { ApprovalQueuePage, CapexDetailPage, CapexFormPage, CapexPage, ContractDetailPage, ContractFormPage, ContractsPage, CorporateAuditLogsPage, PurchaseOrderDetailPage, PurchaseOrderFormPage, PurchaseOrdersPage, SupplierDetailPage, SupplierFormPage, SuppliersPage } from '../modules/corporate/pages'
 import { EnergyAuditLogsPage, EnergyDashboardPage, EnergyTrendsPage, KPIReadingFormPage, KPIReadingsPage, SustainabilityReportsPage, SustainabilityTargetFormPage, SustainabilityTargetsPage, UtilityCostFormPage, UtilityCostsPage } from '../modules/energy/pages'
+import { DepartmentDashboardsPage, ExecutiveDashboardPage, ReportBuilderPage, ReportDefinitionsPage, ReportRunDetailPage, ReportRunsPage, ReportSchedulesPage, ReportingAuditLogsPage } from '../modules/reporting/pages'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -205,6 +206,14 @@ export function App() {
           <Route path="/energy/sustainability-targets/new" element={<PrivateRoute><SustainabilityTargetFormPage /></PrivateRoute>} />
           <Route path="/energy/sustainability-targets/:id/edit" element={<PrivateRoute><SustainabilityTargetFormPage /></PrivateRoute>} />
           <Route path="/energy/audit-logs" element={<PrivateRoute><EnergyAuditLogsPage /></PrivateRoute>} />
+          <Route path="/reporting/executive-dashboard" element={<PrivateRoute><ExecutiveDashboardPage /></PrivateRoute>} />
+          <Route path="/reporting/departments" element={<PrivateRoute><DepartmentDashboardsPage /></PrivateRoute>} />
+          <Route path="/reporting/report-builder" element={<PrivateRoute><ReportBuilderPage /></PrivateRoute>} />
+          <Route path="/reporting/reports" element={<PrivateRoute><ReportDefinitionsPage /></PrivateRoute>} />
+          <Route path="/reporting/reports/runs" element={<PrivateRoute><ReportRunsPage /></PrivateRoute>} />
+          <Route path="/reporting/reports/runs/:id" element={<PrivateRoute><ReportRunDetailPage /></PrivateRoute>} />
+          <Route path="/reporting/schedules" element={<PrivateRoute><ReportSchedulesPage /></PrivateRoute>} />
+          <Route path="/reporting/audit-logs" element={<PrivateRoute><ReportingAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
