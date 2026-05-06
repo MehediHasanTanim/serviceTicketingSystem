@@ -1042,3 +1042,87 @@ class TechnicalAuditResponseSerializer(serializers.Serializer):
     created_by = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+class FBBreakfastCountCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField()
+    outlet_id = serializers.IntegerField()
+    service_date = serializers.DateField()
+    expected_guest_count = serializers.IntegerField(min_value=0)
+    actual_guest_count = serializers.IntegerField(min_value=0)
+    in_house_guest_count = serializers.IntegerField(min_value=0, required=False, default=0)
+    complimentary_count = serializers.IntegerField(min_value=0, required=False, default=0)
+    paid_count = serializers.IntegerField(min_value=0, required=False, default=0)
+    no_show_count = serializers.IntegerField(min_value=0, required=False, default=0)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class FBBreakfastCountUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False)
+    outlet_id = serializers.IntegerField(required=False)
+    service_date = serializers.DateField(required=False)
+    expected_guest_count = serializers.IntegerField(min_value=0, required=False)
+    actual_guest_count = serializers.IntegerField(min_value=0, required=False)
+    in_house_guest_count = serializers.IntegerField(min_value=0, required=False)
+    complimentary_count = serializers.IntegerField(min_value=0, required=False)
+    paid_count = serializers.IntegerField(min_value=0, required=False)
+    no_show_count = serializers.IntegerField(min_value=0, required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class FBOutletReadinessCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField()
+    outlet_id = serializers.IntegerField()
+    readiness_date = serializers.DateField()
+    shift = serializers.ChoiceField(choices=["BREAKFAST", "LUNCH", "DINNER", "ALL_DAY", "OTHER"], default="BREAKFAST")
+    checklist_items = serializers.ListField(child=serializers.DictField(), required=False, default=list)
+
+
+class FBOutletReadinessUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=["PENDING", "IN_PROGRESS", "READY", "NOT_READY", "VERIFIED", "VOID"], required=False)
+    checklist_items = serializers.ListField(child=serializers.DictField(), required=False)
+    checklist_item_id = serializers.IntegerField(required=False)
+    result = serializers.ChoiceField(choices=["PASS", "FAIL", "N/A"], required=False)
+    comment = serializers.CharField(required=False, allow_blank=True)
+
+
+class FBOutletReadinessActionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class FBTaskCreateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    outlet_id = serializers.IntegerField()
+    title = serializers.CharField(max_length=255)
+    task_type = serializers.ChoiceField(choices=["BREAKFAST_PREP", "OUTLET_SETUP", "INVENTORY_CHECK", "CLEANING", "SERVICE_SUPPORT", "ISSUE_RESOLUTION", "OTHER"])
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], default="MEDIUM")
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class FBTaskUpdateSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    property_id = serializers.IntegerField(required=False, allow_null=True)
+    outlet_id = serializers.IntegerField(required=False)
+    title = serializers.CharField(max_length=255, required=False)
+    task_type = serializers.ChoiceField(choices=["BREAKFAST_PREP", "OUTLET_SETUP", "INVENTORY_CHECK", "CLEANING", "SERVICE_SUPPORT", "ISSUE_RESOLUTION", "OTHER"], required=False)
+    priority = serializers.ChoiceField(choices=["LOW", "MEDIUM", "HIGH", "URGENT"], required=False)
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+    due_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+class FBTaskAssignSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    assignee_id = serializers.IntegerField(required=False)
+    assignee = serializers.IntegerField(required=False)
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class FBTaskActionSerializer(serializers.Serializer):
+    org_id = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True)

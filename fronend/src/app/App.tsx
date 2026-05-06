@@ -53,6 +53,15 @@ import { ProjectDetailPage } from '../modules/projects/pages/ProjectDetailPage'
 import { SnaggingItemDetailPage } from '../modules/projects/pages/SnaggingItemDetailPage'
 import { TechnicalAuditDetailPage } from '../modules/projects/pages/TechnicalAuditDetailPage'
 import { ProjectAuditLogsPage } from '../modules/projects/pages/ProjectAuditLogsPage'
+import { BreakfastCountsPage } from '../modules/food-beverage/pages/BreakfastCountsPage'
+import { BreakfastCountFormPage } from '../modules/food-beverage/pages/BreakfastCountFormPage'
+import { BreakfastCountDetailPage } from '../modules/food-beverage/pages/BreakfastCountDetailPage'
+import { OutletReadinessPage } from '../modules/food-beverage/pages/OutletReadinessPage'
+import { OutletReadinessDetailPage } from '../modules/food-beverage/pages/OutletReadinessDetailPage'
+import { FBTasksPage } from '../modules/food-beverage/pages/FBTasksPage'
+import { FBTaskDetailPage } from '../modules/food-beverage/pages/FBTaskDetailPage'
+import { FBDashboardPage } from '../modules/food-beverage/pages/FBDashboardPage'
+import { FBAuditLogsPage } from '../modules/food-beverage/pages/FBAuditLogsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { auth } = useAuth()
@@ -153,6 +162,16 @@ export function App() {
           <Route path="/projects/snagging-items/:snagId" element={<PrivateRoute><SnaggingItemDetailPage /></PrivateRoute>} />
           <Route path="/projects/technical-audits/:auditId" element={<PrivateRoute><TechnicalAuditDetailPage /></PrivateRoute>} />
           <Route path="/projects/audit-logs" element={<PrivateRoute><ProjectAuditLogsPage /></PrivateRoute>} />
+          <Route path="/food-beverage/dashboard" element={<PrivateRoute><FBDashboardPage /></PrivateRoute>} />
+          <Route path="/food-beverage/breakfast-counts" element={<PrivateRoute><BreakfastCountsPage /></PrivateRoute>} />
+          <Route path="/food-beverage/breakfast-counts/new" element={<PrivateRoute><BreakfastCountFormPage /></PrivateRoute>} />
+          <Route path="/food-beverage/breakfast-counts/:id" element={<PrivateRoute><BreakfastCountDetailPage /></PrivateRoute>} />
+          <Route path="/food-beverage/breakfast-counts/:id/edit" element={<PrivateRoute><BreakfastCountFormPage /></PrivateRoute>} />
+          <Route path="/food-beverage/outlet-readiness" element={<PrivateRoute><OutletReadinessPage /></PrivateRoute>} />
+          <Route path="/food-beverage/outlet-readiness/:id" element={<PrivateRoute><OutletReadinessDetailPage /></PrivateRoute>} />
+          <Route path="/food-beverage/tasks" element={<PrivateRoute><FBTasksPage /></PrivateRoute>} />
+          <Route path="/food-beverage/tasks/:id" element={<PrivateRoute><FBTaskDetailPage /></PrivateRoute>} />
+          <Route path="/food-beverage/audit-logs" element={<PrivateRoute><FBAuditLogsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

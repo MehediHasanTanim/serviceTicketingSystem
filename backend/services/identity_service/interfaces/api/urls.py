@@ -7,6 +7,7 @@ from interfaces.api import maintenance_views
 from interfaces.api import project_views
 from interfaces.api import service_order_views
 from interfaces.api import risk_compliance_views
+from interfaces.api import food_beverage_views
 
 urlpatterns = [
     path("me", auth_views.MeView.as_view(), name="auth-me"),
@@ -173,5 +174,25 @@ urlpatterns = [
     path("projects/technical-audits/<int:audit_id>/complete", project_views.TechnicalAuditCompleteView.as_view(), name="project-technical-audit-complete"),
     path("projects/technical-audits/<int:audit_id>/cancel", project_views.TechnicalAuditCancelView.as_view(), name="project-technical-audit-cancel"),
     path("projects/technical-audits/<int:audit_id>/void", project_views.TechnicalAuditVoidView.as_view(), name="project-technical-audit-void"),
+    path("food-beverage/breakfast-counts", food_beverage_views.FBBreakfastCountListCreateView.as_view(), name="fb-breakfast-list-create"),
+    path("food-beverage/breakfast-counts/<int:id>", food_beverage_views.FBBreakfastCountDetailView.as_view(), name="fb-breakfast-detail"),
+    path("food-beverage/outlet-readiness", food_beverage_views.FBOutletReadinessListCreateView.as_view(), name="fb-readiness-list-create"),
+    path("food-beverage/outlet-readiness/<int:id>", food_beverage_views.FBOutletReadinessDetailView.as_view(), name="fb-readiness-detail"),
+    path("food-beverage/outlet-readiness/<int:id>/start", food_beverage_views.FBOutletReadinessStartView.as_view(), name="fb-readiness-start"),
+    path("food-beverage/outlet-readiness/<int:id>/submit", food_beverage_views.FBOutletReadinessSubmitView.as_view(), name="fb-readiness-submit"),
+    path("food-beverage/outlet-readiness/<int:id>/verify", food_beverage_views.FBOutletReadinessVerifyView.as_view(), name="fb-readiness-verify"),
+    path("food-beverage/outlet-readiness/<int:id>/void", food_beverage_views.FBOutletReadinessVoidView.as_view(), name="fb-readiness-void"),
+    path("food-beverage/tasks", food_beverage_views.FBTaskListCreateView.as_view(), name="fb-task-list-create"),
+    path("food-beverage/tasks/<int:id>", food_beverage_views.FBTaskDetailView.as_view(), name="fb-task-detail"),
+    path("food-beverage/tasks/<int:id>/assign", food_beverage_views.FBTaskAssignView.as_view(), name="fb-task-assign"),
+    path("food-beverage/tasks/<int:id>/start", food_beverage_views.FBTaskStartView.as_view(), name="fb-task-start"),
+    path("food-beverage/tasks/<int:id>/complete", food_beverage_views.FBTaskCompleteView.as_view(), name="fb-task-complete"),
+    path("food-beverage/tasks/<int:id>/cancel", food_beverage_views.FBTaskCancelView.as_view(), name="fb-task-cancel"),
+    path("food-beverage/tasks/<int:id>/void", food_beverage_views.FBTaskVoidView.as_view(), name="fb-task-void"),
+    path("food-beverage/metrics/summary", food_beverage_views.FBMetricsSummaryView.as_view(), name="fb-metrics-summary"),
+    path("food-beverage/metrics/breakfast", food_beverage_views.FBMetricsBreakfastView.as_view(), name="fb-metrics-breakfast"),
+    path("food-beverage/metrics/outlet-readiness", food_beverage_views.FBMetricsOutletReadinessView.as_view(), name="fb-metrics-readiness"),
+    path("food-beverage/metrics/tasks", food_beverage_views.FBMetricsTasksView.as_view(), name="fb-metrics-tasks"),
+    path("food-beverage/audit-logs", food_beverage_views.FBAuditLogsView.as_view(), name="fb-audit-logs"),
 
 ]

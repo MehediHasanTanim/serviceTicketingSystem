@@ -1,0 +1,19 @@
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../../../features/auth/authContext'
+import { useFBMetrics } from '../hooks/useFoodBeverage'
+
+const safe = (n: number) => (Number.isFinite(n) ? n : 0)
+
+export function FBDashboardPage() {
+  const { auth } = useAuth(); const [params, setParams] = useSearchParams(); const query = useMemo(() => new URLSearchParams(params.toString()), [params])
+  const { summary, breakfastTrend, readinessTrend, taskTrend, loading, error, reload } = useFBMetrics(auth?.accessToken, auth?.user?.org_id, query)
+  return <div className="page full"><div className="glass panel"><div className="section-head"><h2>F&B Dashboard</h2><button className="button secondary small" onClick={reload}>Refresh</button></div>
+    <div className="grid-form filters-grid"><input className="input" type="date" aria-label="date_from" value={params.get('date_from') || ''} onChange={(e) => { const n = new URLSearchParams(params.toString()); if (e.target.value) n.set('date_from', e.target.value); else n.delete('date_from'); setParams(n) }} /><input className="input" type="date" aria-label="date_to" value={params.get('date_to') || ''} onChange={(e) => { const n = new URLSearchParams(params.toString()); if (e.target.value) n.set('date_to', e.target.value); else n.delete('date_to'); setParams(n) }} /><input className="input" placeholder="Property ID" aria-label="property_id" value={params.get('property_id') || ''} onChange={(e) => { const n = new URLSearchParams(params.toString()); if (e.target.value) n.set('property_id', e.target.value); else n.delete('property_id'); setParams(n) }} /></div>
+    {loading ? <p>Loading dashboard...</p> : null}{error ? <div><p className="error-text">{error}</p><button className="button secondary small" onClick={reload}>Retry</button></div> : null}
+    <div className="cards-grid" aria-label="kpi-cards">{[['Expected breakfast count', safe(summary.expected_breakfast_count)], ['Actual breakfast count', safe(summary.actual_breakfast_count)], ['Variance count', safe(summary.variance_count)], ['Variance percentage', safe(summary.variance_percentage)], ['Complimentary count', safe(summary.complimentary_count)], ['Paid count', safe(summary.paid_count)], ['No-show count', safe(summary.no_show_count)], ['Outlet ready count', safe(summary.outlet_ready_count)], ['Outlet not-ready count', safe(summary.outlet_not_ready_count)], ['Average readiness score', safe(summary.average_readiness_score)], ['Total tasks', safe(summary.total_tasks)], ['Completed tasks', safe(summary.completed_tasks)], ['Overdue tasks', safe(summary.overdue_tasks)], ['Average task completion time', safe(summary.average_task_completion_time)]].map(([label, value]) => <article key={String(label)} className="glass panel"><h3>{label}</h3><p>{value as number}</p></article>)}</div>
+    <h3>Breakfast count trend</h3><div className="table-wrap"><table className="data-table"><thead><tr><th>Date</th><th>Value</th></tr></thead><tbody>{breakfastTrend.length ? breakfastTrend.map((x, i) => <tr key={`${x.date}-${i}`}><td>{x.date}</td><td>{x.value}</td></tr>) : <tr><td colSpan={2}>No data</td></tr>}</tbody></table></div>
+    <h3>Outlet readiness by status</h3><div className="table-wrap"><table className="data-table"><thead><tr><th>Status</th><th>Value</th></tr></thead><tbody>{readinessTrend.length ? readinessTrend.map((x, i) => <tr key={`${x.status || x.label}-${i}`}><td>{x.status || x.label || '-'}</td><td>{x.value}</td></tr>) : <tr><td colSpan={2}>No data</td></tr>}</tbody></table></div>
+    <h3>Task status distribution</h3><div className="table-wrap"><table className="data-table"><thead><tr><th>Status</th><th>Value</th></tr></thead><tbody>{taskTrend.length ? taskTrend.map((x, i) => <tr key={`${x.label}-${i}`}><td>{x.label || '-'}</td><td>{x.value}</td></tr>) : <tr><td colSpan={2}>No data</td></tr>}</tbody></table></div>
+  </div></div>
+}

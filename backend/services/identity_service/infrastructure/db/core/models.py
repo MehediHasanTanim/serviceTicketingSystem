@@ -793,6 +793,89 @@ class MaintenanceTaskAttachment(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+class FoodBeverageBreakfastCount(TimestampedModel):
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="fb_breakfast_counts")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="fb_breakfast_counts")
+    outlet_id = models.BigIntegerField()
+    service_date = models.DateField()
+    expected_guest_count = models.IntegerField(default=0)
+    actual_guest_count = models.IntegerField(default=0)
+    in_house_guest_count = models.IntegerField(default=0)
+    complimentary_count = models.IntegerField(default=0)
+    paid_count = models.IntegerField(default=0)
+    no_show_count = models.IntegerField(default=0)
+    notes = models.TextField(blank=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="fb_recorded_breakfast_counts", null=True, blank=True)
+
+
+class FoodBeverageOutletReadiness(TimestampedModel):
+    SHIFT_CHOICES = [
+        ("BREAKFAST", "Breakfast"),
+        ("LUNCH", "Lunch"),
+        ("DINNER", "Dinner"),
+        ("ALL_DAY", "All Day"),
+        ("OTHER", "Other"),
+    ]
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("IN_PROGRESS", "In Progress"),
+        ("READY", "Ready"),
+        ("NOT_READY", "Not Ready"),
+        ("VERIFIED", "Verified"),
+        ("VOID", "Void"),
+    ]
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="fb_outlet_readiness")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="fb_outlet_readiness")
+    outlet_id = models.BigIntegerField()
+    readiness_date = models.DateField()
+    shift = models.CharField(max_length=16, choices=SHIFT_CHOICES, default="BREAKFAST")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="PENDING")
+    checklist_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    checklist_items = models.JSONField(default=list, blank=True)
+    verified_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="fb_verified_readiness", null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+
+class FoodBeverageTask(TimestampedModel):
+    PRIORITY_CHOICES = [
+        ("LOW", "Low"),
+        ("MEDIUM", "Medium"),
+        ("HIGH", "High"),
+        ("URGENT", "Urgent"),
+    ]
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("ASSIGNED", "Assigned"),
+        ("IN_PROGRESS", "In Progress"),
+        ("COMPLETED", "Completed"),
+        ("CANCELLED", "Cancelled"),
+        ("VOID", "Void"),
+    ]
+    TYPE_CHOICES = [
+        ("BREAKFAST_PREP", "Breakfast Prep"),
+        ("OUTLET_SETUP", "Outlet Setup"),
+        ("INVENTORY_CHECK", "Inventory Check"),
+        ("CLEANING", "Cleaning"),
+        ("SERVICE_SUPPORT", "Service Support"),
+        ("ISSUE_RESOLUTION", "Issue Resolution"),
+        ("OTHER", "Other"),
+    ]
+    org = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="fb_tasks")
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="fb_tasks", null=True, blank=True)
+    outlet_id = models.BigIntegerField()
+    task_number = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=255)
+    task_type = models.CharField(max_length=32, choices=TYPE_CHOICES, default="OTHER")
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default="MEDIUM")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="PENDING")
+    assigned_to = models.ForeignKey(User, on_delete=models.PROTECT, related_name="fb_assigned_tasks", null=True, blank=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_reason = models.TextField(blank=True)
+    void_reason = models.TextField(blank=True)
+
+
 class PasswordResetToken(models.Model):
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
