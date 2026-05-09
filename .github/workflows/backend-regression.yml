@@ -1,0 +1,63 @@
+name: Backend Regression
+
+on:
+  pull_request:
+    paths:
+      - 'backend/services/identity_service/**'
+      - '.github/workflows/backend-regression.yml'
+      - 'Makefile'
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backend-regression-smoke:
+    name: backend-regression-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run regression smoke (P0)
+        run: |
+          docker compose run --rm --build identity_service \
+            python -m pytest tests/regression -m "regression and p0" \
+            --junitxml=regression-smoke-junit.xml \
+            --cov=. \
+            --cov-report=xml:regression-smoke-coverage.xml \
+            --cov-fail-under=0
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-regression-smoke-artifacts
+          path: |
+            backend/services/identity_service/regression-smoke-junit.xml
+            backend/services/identity_service/regression-smoke-coverage.xml
+
+  backend-regression-full:
+    name: backend-regression-full
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run full backend regression (P0+P1+P2)
+        run: |
+          docker compose run --rm --build identity_service \
+            python -m pytest tests/regression -m "regression and (p0 or p1 or p2)" \
+            --junitxml=regression-full-junit.xml \
+            --cov=. \
+            --cov-report=xml:regression-full-coverage.xml \
+            --cov-fail-under=0
+
+      - name: Upload full artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-regression-full-artifacts
+          path: |
+            backend/services/identity_service/regression-full-junit.xml
+            backend/services/identity_service/regression-full-coverage.xml

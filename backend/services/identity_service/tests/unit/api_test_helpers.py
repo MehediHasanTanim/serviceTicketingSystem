@@ -1,5 +1,4 @@
 from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
 from infrastructure.db.core.models import Organization, Permission, Role, RolePermission, User, UserRole
 
@@ -43,6 +42,5 @@ def grant_permissions(user: User, permission_codes: list[str], role_name: str = 
 
 def authenticated_client(user: User) -> APIClient:
     client = APIClient()
-    access_token = str(JWTRefreshToken.for_user(user).access_token)
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+    client.force_authenticate(user=user)
     return client

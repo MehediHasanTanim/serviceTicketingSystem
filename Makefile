@@ -4,6 +4,8 @@ BACKEND_DIR := backend/services/identity_service
 FRONTEND_DIR := fronend
 
 .PHONY: test test-backend test-frontend test-coverage test-backend-coverage test-frontend-coverage test-service-order-audit
+.PHONY: test-regression-backend-smoke test-regression-backend
+.PHONY: test-regression-frontend-smoke test-regression-frontend
 .PHONY: lint lint-backend lint-frontend quality
 
 test: test-backend test-frontend
@@ -56,3 +58,17 @@ quality: lint test-coverage
 
 test-service-order-audit:
 	docker compose run --rm --build identity_service python -m pytest tests/unit/test_api_service_orders.py::test_service_order_actions_are_recorded_in_audit_logs -q --no-cov
+
+test-regression-backend-smoke:
+	docker compose run --rm --build identity_service \
+		python -m pytest tests/regression -m "regression and p0" --no-cov
+
+test-regression-backend:
+	docker compose run --rm --build identity_service \
+		python -m pytest tests/regression -m "regression and (p0 or p1 or p2)" --no-cov
+
+test-regression-frontend-smoke:
+	cd $(FRONTEND_DIR) && npm run test:regression:fe:smoke
+
+test-regression-frontend:
+	cd $(FRONTEND_DIR) && npm run test:regression:fe
